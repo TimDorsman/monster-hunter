@@ -2,7 +2,7 @@
 	{
 		"id": 1,
 		"name": "Abyssal Leviadrake",
-		"health": 180,
+		"health": 360,
 		"experience": 56,
 		"weaknesses": ["electric", "ice", "fairy"],
 		"strenghts": ["water", "dragon", "dark"],

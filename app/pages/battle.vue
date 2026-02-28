@@ -19,6 +19,14 @@ const {
 	battleEnded,
 	activeTurn,
 	isAwaitingMonsterAttack,
+	turnHunterId,
+	connectionStatus,
+	isSpectator,
+	activeHunters,
+	spectatorHunters,
+	currentTurnHunterName,
+	maxHunters,
+	selfHunter,
 	hunterAttackCount,
 	hunterDamagedCount,
 	monsterAttackCount,
@@ -63,6 +71,98 @@ const battleLogTitle = computed(() => {
 });
 
 const canHeal = computed(() => playerHealth.value < PLAYER_MAX_HEALTH);
+const isLowHealth = computed(() => playerHealthPercent.value < 20 && !battleEnded.value);
+const isCriticalHealth = computed(
+	() => playerHealthPercent.value < 10 && !battleEnded.value,
+);
+const showRoomStatus = ref(false);
+const isActionDisabled = computed(() => {
+	if (isLoading.value) {
+		return true;
+	}
+	if (battleEnded.value) {
+		return true;
+	}
+	if (activeTurn.value !== "player") {
+		return true;
+	}
+	if (isSpectator.value) {
+		return true;
+	}
+	return false;
+});
+const isMonsterTurn = computed(() => {
+	if (battleEnded.value) {
+		return false;
+	}
+	if (isAwaitingMonsterAttack.value) {
+		return true;
+	}
+	if (activeTurn.value !== "monster") {
+		return false;
+	}
+	return !currentTurnHunterName.value;
+});
+const isOtherHunterTurn = computed(() => {
+	if (battleEnded.value) {
+		return false;
+	}
+	if (isAwaitingMonsterAttack.value) {
+		return false;
+	}
+	if (activeTurn.value !== "monster") {
+		return false;
+	}
+	return Boolean(currentTurnHunterName.value);
+});
+const turnBannerLabel = computed(() => {
+	if (battleEnded.value) {
+		return "BATTLE ENDED";
+	}
+	if (isAwaitingMonsterAttack.value) {
+		return "MONSTER TURN";
+	}
+	if (isSpectator.value && currentTurnHunterName.value) {
+		return `${currentTurnHunterName.value.toUpperCase()}'S TURN`;
+	}
+	if (activeTurn.value === "player") {
+		return "YOUR TURN";
+	}
+	if (currentTurnHunterName.value) {
+		return `${currentTurnHunterName.value.toUpperCase()}'S TURN`;
+	}
+	return "WAITING...";
+});
+const turnHintLabel = computed(() => {
+	if (battleEnded.value) {
+		return "Select a new monster to start another round.";
+	}
+	if (isAwaitingMonsterAttack.value) {
+		return `${currentMonster.value?.name ?? "Monster"} is preparing an attack.`;
+	}
+	if (activeTurn.value === "player" && !isSpectator.value) {
+		return "Choose an ability to take your action.";
+	}
+	if (isSpectator.value && currentTurnHunterName.value) {
+		return `${currentTurnHunterName.value} can act now.`;
+	}
+	if (currentTurnHunterName.value) {
+		return `Waiting for ${currentTurnHunterName.value} to act.`;
+	}
+	return "Waiting for battle state...";
+});
+
+function getRequiredExperienceForLevel(level: number) {
+	return Math.round(60 + level * 40 + level * level * 12);
+}
+
+const hunterCards = computed(() => {
+	const cards = [...activeHunters.value];
+	while (cards.length < 4) {
+		cards.push(null as unknown as (typeof activeHunters.value)[number]);
+	}
+	return cards.slice(0, 4);
+});
 
 function getLogSourceLabel(source: "hunter" | "monster" | "system") {
 	if (source === "hunter") {
@@ -169,6 +269,12 @@ onBeforeUnmount(() => {
 
 <template>
 	<div
+		v-if="isLowHealth"
+		class="low-health-overlay"
+		:class="{ 'low-health-overlay-critical': isCriticalHealth }"
+	/>
+
+	<div
 		v-if="showLevelUpOverlay"
 		:key="levelUpOverlayKey"
 		class="level-up-overlay"
@@ -180,11 +286,65 @@ onBeforeUnmount(() => {
 		<UButton
 			color="neutral"
 			variant="soft"
-			:disabled="isLoading || isAwaitingMonsterAttack"
+			:disabled="isLoading || isAwaitingMonsterAttack || isSpectator"
 			@click="pickRandomMonster"
 		>
 			New Monster
 		</UButton>
+	</div>
+
+	<div class="fixed top-6 left-1/2 z-30 -translate-x-1/2">
+		<div
+			class="turn-banner section-text-outline rounded-xl border px-4 py-2 text-sm font-bold tracking-[0.08em]"
+			:class="{
+				'turn-banner-player': activeTurn === 'player' && !isSpectator,
+				'turn-banner-monster': isMonsterTurn,
+				'turn-banner-other': isOtherHunterTurn,
+			}"
+		>
+			<p class="text-center">{{ turnBannerLabel }}</p>
+			<p class="turn-banner-hint mt-1 text-center text-[0.65rem] font-semibold tracking-[0.06em]">
+				{{ turnHintLabel }}
+			</p>
+		</div>
+	</div>
+
+	<div class="fixed bottom-6 left-6 z-30 flex items-center gap-2">
+		<UButton
+			color="neutral"
+			variant="soft"
+			size="sm"
+			@click="showRoomStatus = !showRoomStatus"
+		>
+			{{ showRoomStatus ? "Hide Room" : "Show Room" }}
+		</UButton>
+		<UButton color="neutral" variant="subtle" size="sm" to="/">
+			Back Home
+		</UButton>
+	</div>
+
+	<div
+		v-if="showRoomStatus"
+		class="fixed bottom-20 left-6 z-30 w-80 rounded-xl border border-white/20 bg-black/55 p-3 backdrop-blur"
+	>
+		<p class="section-text-outline text-xs uppercase tracking-[0.16em] text-white/80">
+			Room Status
+		</p>
+		<p class="section-text-outline mt-1 text-sm font-semibold text-cyan-100">
+			Role: {{ isSpectator ? "Spectator" : "Hunter" }}
+		</p>
+		<p class="section-text-outline text-xs text-white/80">
+			Connection: {{ connectionStatus }}
+		</p>
+		<p class="section-text-outline text-xs text-white/80">
+			Active Hunters: {{ activeHunters.length }} / {{ maxHunters }}
+		</p>
+		<p class="section-text-outline text-xs text-white/80">
+			Spectators: {{ spectatorHunters.length }}
+		</p>
+		<p class="section-text-outline mt-1 text-xs text-amber-200">
+			Turn: {{ currentTurnHunterName || "Monster" }}
+		</p>
 	</div>
 
 	<main class="min-h-screen px-8 pb-32 pt-10 text-white">
@@ -201,50 +361,86 @@ onBeforeUnmount(() => {
 			v-else-if="currentMonster"
 			class="flex min-h-[60vh] items-start justify-between gap-12"
 		>
-			<section class="w-full max-w-sm space-y-4">
+			<section class="w-full max-w-2xl space-y-4">
 				<p
 					class="section-text-outline text-sm uppercase tracking-[0.18em] text-cyan-200"
 				>
 					Hunter
 				</p>
-				<p class="section-text-outline text-xl font-bold">
-					Swifty Mercury
-				</p>
 
-				<div
-					class="relative h-8 overflow-hidden rounded-full border border-cyan-300/40 bg-black/40"
-				>
+				<div class="grid grid-cols-2 gap-4">
 					<div
-						class="h-full bg-cyan-500/70 transition-all duration-300"
-						:style="{ width: `${playerHealthPercent}%` }"
-					/>
-					<span
-						class="section-text-outline absolute inset-0 flex items-center justify-center text-sm font-semibold"
+						v-for="(hunter, index) in hunterCards"
+						:key="hunter ? hunter.id : `empty-${index}`"
+						class="rounded-xl border border-cyan-300/30 bg-black/35 p-3"
+						:class="{
+							'hunter-turn-card':
+								hunter &&
+								!isAwaitingMonsterAttack &&
+								turnHunterId === hunter.id &&
+								!battleEnded,
+							'combat-card combat-card-shake':
+								hunter &&
+								selfHunter &&
+								hunter.id === selfHunter.id &&
+								isHunterCardShaking,
+							'combat-card combat-card-hit':
+								hunter &&
+								selfHunter &&
+								hunter.id === selfHunter.id &&
+								isHunterCardHit,
+						}"
 					>
-						{{ playerHealth }} / {{ PLAYER_MAX_HEALTH }}
-					</span>
-				</div>
-
-				<div class="section-text-outline text-sm text-cyan-100">
-					<p class="font-semibold">Level {{ playerLevel }}</p>
-					<p>
-						XP {{ playerExperience }} /
-						{{ experienceRequiredForNextLevel }}
-					</p>
-				</div>
-
-				<div
-					class="combat-card"
-					:class="{
-						'combat-card-shake': isHunterCardShaking,
-						'combat-card-hit': isHunterCardHit,
-					}"
-				>
-					<img
-						src="/images/hunter.png"
-						alt="Hunter portrait"
-						class="h-72 w-72 rounded-xl border border-cyan-300/30 bg-black/35 object-contain p-2"
-					/>
+						<template v-if="hunter">
+							<p
+								v-if="!isAwaitingMonsterAttack && !battleEnded && turnHunterId === hunter.id"
+								class="turn-card-badge turn-card-badge-hunter section-text-outline"
+							>
+								Turn
+							</p>
+							<p class="section-text-outline text-sm font-bold">
+								{{ hunter.name }}
+							</p>
+							<div
+								class="relative mt-2 h-6 overflow-hidden rounded-full border border-cyan-300/40 bg-black/40"
+							>
+								<div
+									class="h-full bg-cyan-500/70 transition-all duration-300"
+									:style="{
+										width: `${Math.max(
+											0,
+											Math.round((hunter.health / hunter.maxHealth) * 100),
+										)}%`,
+									}"
+								/>
+								<span
+									class="section-text-outline absolute inset-0 flex items-center justify-center text-xs font-semibold"
+								>
+									{{ hunter.health }} / {{ hunter.maxHealth }}
+								</span>
+							</div>
+							<div class="section-text-outline mt-2 text-xs text-cyan-100">
+								<p class="font-semibold">Level {{ hunter.level }}</p>
+								<p>
+									XP {{ hunter.experience }} /
+									{{ getRequiredExperienceForLevel(hunter.level) }}
+								</p>
+							</div>
+							<img
+								src="/images/hunter.png"
+								:alt="`${hunter.name} portrait`"
+								class="mt-2 h-32 w-full rounded-lg border border-cyan-300/30 bg-black/35 object-contain p-2"
+							/>
+						</template>
+						<template v-else>
+							<p class="section-text-outline text-sm font-semibold text-white/70">
+								Open Slot
+							</p>
+							<div class="mt-2 flex h-52 items-center justify-center rounded-lg border border-dashed border-white/20 text-xs text-white/50">
+								Waiting for hunter...
+							</div>
+						</template>
+					</div>
 				</div>
 			</section>
 
@@ -281,12 +477,19 @@ onBeforeUnmount(() => {
 				</div>
 
 				<div
-					class="combat-card w-fit"
+					class="combat-card monster-card-shell w-fit"
 					:class="{
 						'combat-card-shake': isMonsterCardShaking,
 						'combat-card-hit': isMonsterCardHit,
+						'monster-turn-card': isMonsterTurn,
 					}"
 				>
+					<p
+						v-if="isMonsterTurn && !battleEnded"
+						class="turn-card-badge turn-card-badge-monster section-text-outline"
+					>
+						Monster Turn
+					</p>
 					<NuxtImg
 						:src="monsterImageSrc"
 						:alt="`${currentMonster.name} portrait`"
@@ -311,7 +514,7 @@ onBeforeUnmount(() => {
 				class="ability-button ability-button-attack"
 				color="error"
 				size="xl"
-				:disabled="isLoading || battleEnded || activeTurn !== 'player'"
+				:disabled="isActionDisabled"
 				@click="attackMonster"
 			>
 				<span class="ability-label">
@@ -324,7 +527,7 @@ onBeforeUnmount(() => {
 				class="ability-button ability-button-aura"
 				color="primary"
 				size="xl"
-				:disabled="isLoading || battleEnded || activeTurn !== 'player'"
+				:disabled="isActionDisabled"
 				@click="castAuraBeam"
 			>
 				<span class="ability-label">
@@ -337,12 +540,7 @@ onBeforeUnmount(() => {
 				class="ability-button ability-button-heal"
 				color="success"
 				size="xl"
-				:disabled="
-					isLoading ||
-					battleEnded ||
-					activeTurn !== 'player' ||
-					!canHeal
-				"
+				:disabled="isActionDisabled || !canHeal"
 				@click="healHunter"
 			>
 				<span class="ability-label">
@@ -388,6 +586,12 @@ onBeforeUnmount(() => {
 				</span>
 			</UButton>
 		</section>
+		<p
+			v-if="isSpectator"
+			class="section-text-outline fixed bottom-[8.5rem] left-1/2 z-30 -translate-x-1/2 rounded-md border border-amber-300/40 bg-black/55 px-3 py-1 text-xs text-amber-200"
+		>
+			You are spectating. Wait for a free hunter slot.
+		</p>
 
 		<aside
 			class="fixed bottom-6 right-6 z-30 w-[28rem] rounded-xl border border-white/20 bg-black/55 p-4 backdrop-blur"
@@ -412,11 +616,6 @@ onBeforeUnmount(() => {
 			</ul>
 		</aside>
 
-		<div class="fixed bottom-6 left-6 z-30">
-			<UButton color="neutral" variant="subtle" to="/">
-				Back Home
-			</UButton>
-		</div>
 	</main>
 </template>
 
@@ -799,5 +998,161 @@ onBeforeUnmount(() => {
 		-1px 1px 0 rgba(0, 0, 0, 0.88),
 		1px 1px 0 rgba(0, 0, 0, 0.88),
 		0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.turn-banner {
+	background: rgba(15, 23, 42, 0.78);
+	border-color: rgba(148, 163, 184, 0.45);
+	color: rgba(241, 245, 249, 0.96);
+	min-width: 20rem;
+	box-shadow: 0 8px 24px rgba(2, 6, 23, 0.35);
+}
+
+.turn-banner-hint {
+	color: rgba(226, 232, 240, 0.92);
+}
+
+.turn-banner-player {
+	background: rgba(6, 78, 59, 0.8);
+	border-color: rgba(16, 185, 129, 0.55);
+	color: rgba(167, 243, 208, 1);
+	box-shadow: 0 0 22px rgba(16, 185, 129, 0.35);
+	animation: turn-banner-player-pulse 0.95s ease-in-out infinite alternate;
+}
+
+.turn-banner-monster {
+	background: rgba(76, 5, 25, 0.8);
+	border-color: rgba(244, 63, 94, 0.55);
+	color: rgba(254, 205, 211, 1);
+	box-shadow: 0 0 22px rgba(244, 63, 94, 0.35);
+	animation: turn-banner-monster-pulse 0.95s ease-in-out infinite alternate;
+}
+
+.turn-banner-other {
+	background: rgba(30, 58, 138, 0.8);
+	border-color: rgba(96, 165, 250, 0.55);
+	color: rgba(191, 219, 254, 1);
+	box-shadow: 0 0 22px rgba(96, 165, 250, 0.3);
+}
+
+.hunter-turn-card {
+	border-color: rgba(34, 211, 238, 0.72);
+	box-shadow:
+		0 0 0 1px rgba(34, 211, 238, 0.65),
+		0 0 22px rgba(34, 211, 238, 0.35);
+}
+
+.turn-card-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 0.35rem;
+	padding: 0.1rem 0.5rem;
+	border-radius: 9999px;
+	font-size: 0.65rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	border: 1px solid transparent;
+}
+
+.turn-card-badge-hunter {
+	background: rgba(34, 211, 238, 0.2);
+	border-color: rgba(34, 211, 238, 0.55);
+	color: rgba(165, 243, 252, 0.98);
+}
+
+.monster-card-shell {
+	position: relative;
+}
+
+.monster-turn-card {
+	box-shadow:
+		0 0 0 1px rgba(251, 113, 133, 0.65),
+		0 0 28px rgba(244, 63, 94, 0.38);
+	animation: monster-turn-pulse 0.95s ease-in-out infinite alternate;
+}
+
+.turn-card-badge-monster {
+	position: absolute;
+	left: 0.75rem;
+	top: 0.75rem;
+	z-index: 2;
+	background: rgba(244, 63, 94, 0.24);
+	border-color: rgba(251, 113, 133, 0.6);
+	color: rgba(254, 205, 211, 1);
+}
+
+@keyframes turn-banner-player-pulse {
+	from {
+		box-shadow: 0 0 10px rgba(16, 185, 129, 0.26);
+	}
+	to {
+		box-shadow: 0 0 26px rgba(16, 185, 129, 0.48);
+	}
+}
+
+@keyframes turn-banner-monster-pulse {
+	from {
+		box-shadow: 0 0 10px rgba(244, 63, 94, 0.26);
+	}
+	to {
+		box-shadow: 0 0 26px rgba(244, 63, 94, 0.48);
+	}
+}
+
+@keyframes monster-turn-pulse {
+	from {
+		box-shadow:
+			0 0 0 1px rgba(251, 113, 133, 0.5),
+			0 0 14px rgba(244, 63, 94, 0.3);
+	}
+	to {
+		box-shadow:
+			0 0 0 1px rgba(251, 113, 133, 0.75),
+			0 0 34px rgba(244, 63, 94, 0.48);
+	}
+}
+
+.low-health-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 45;
+	pointer-events: none;
+	background:
+		radial-gradient(circle at 50% 50%, rgba(255, 0, 0, 0) 58%, rgba(153, 27, 27, 0.18) 100%),
+		radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0) 70%, rgba(220, 38, 38, 0.26) 100%);
+	animation: low-health-pulse 1.1s ease-in-out infinite;
+}
+
+.low-health-overlay-critical {
+	background:
+		radial-gradient(circle at 50% 50%, rgba(255, 0, 0, 0) 54%, rgba(127, 29, 29, 0.26) 100%),
+		radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0) 66%, rgba(220, 38, 38, 0.38) 100%);
+	animation: low-health-pulse-critical 0.72s ease-in-out infinite;
+}
+
+@keyframes low-health-pulse {
+	0% {
+		opacity: 0.55;
+	}
+	50% {
+		opacity: 0.92;
+	}
+	100% {
+		opacity: 0.55;
+	}
+}
+
+@keyframes low-health-pulse-critical {
+	0% {
+		opacity: 0.62;
+	}
+	50% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0.62;
+	}
 }
 </style>
