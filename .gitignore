@@ -22,10 +22,3 @@ logs
 .env
 .env.*
 !.env.example
-
-# Playwright
-playwright-report/
-test-results/
-
-# Test coverage
-coverage/

@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Abyssal Leviadrake",
+    "health": 180,
+    "weaknesses": ["electric", "ice", "fairy"],
+    "strenghts": ["water", "dragon", "dark"],
+    "reward": "Leviadrake Scaleplate"
+  },
+  {
+    "name": "Emberfang Behemoth",
+    "health": 150,
+    "weaknesses": ["water", "ground", "rock"],
+    "strenghts": ["fire", "steel", "bug"],
+    "reward": "Molten Core Fang"
+  },
+  {
+    "name": "Verdant Thornmaw",
+    "health": 165,
+    "weaknesses": ["fire", "ice", "flying"],
+    "strenghts": ["grass", "ground", "water"],
+    "reward": "Thornmaw Heartwood"
+  },
+  {
+    "name": "Stormhide Roczilla",
+    "health": 140,
+    "weaknesses": ["electric", "ice", "rock"],
+    "strenghts": ["flying", "fighting", "grass"],
+    "reward": "Tempest Talon"
+  },
+  {
+    "name": "Nightveil Basilisk",
+    "health": 130,
+    "weaknesses": ["fairy", "ground", "psychic"],
+    "strenghts": ["poison", "ghost", "dark"],
+    "reward": "Basilisk Venom Gland"
+  },
+  {
+    "name": "Glacierback Colossus",
+    "health": 200,
+    "weaknesses": ["fire", "fighting", "steel"],
+    "strenghts": ["ice", "rock", "normal"],
+    "reward": "Colossus Frost Core"
+  }
+]
