@@ -1,44 +1,74 @@
 [
-  {
-    "name": "Abyssal Leviadrake",
-    "health": 180,
-    "weaknesses": ["electric", "ice", "fairy"],
-    "strenghts": ["water", "dragon", "dark"],
-    "reward": "Leviadrake Scaleplate"
-  },
-  {
-    "name": "Emberfang Behemoth",
-    "health": 150,
-    "weaknesses": ["water", "ground", "rock"],
-    "strenghts": ["fire", "steel", "bug"],
-    "reward": "Molten Core Fang"
-  },
-  {
-    "name": "Verdant Thornmaw",
-    "health": 165,
-    "weaknesses": ["fire", "ice", "flying"],
-    "strenghts": ["grass", "ground", "water"],
-    "reward": "Thornmaw Heartwood"
-  },
-  {
-    "name": "Stormhide Roczilla",
-    "health": 140,
-    "weaknesses": ["electric", "ice", "rock"],
-    "strenghts": ["flying", "fighting", "grass"],
-    "reward": "Tempest Talon"
-  },
-  {
-    "name": "Nightveil Basilisk",
-    "health": 130,
-    "weaknesses": ["fairy", "ground", "psychic"],
-    "strenghts": ["poison", "ghost", "dark"],
-    "reward": "Basilisk Venom Gland"
-  },
-  {
-    "name": "Glacierback Colossus",
-    "health": 200,
-    "weaknesses": ["fire", "fighting", "steel"],
-    "strenghts": ["ice", "rock", "normal"],
-    "reward": "Colossus Frost Core"
-  }
+	{
+		"id": 1,
+		"name": "Abyssal Leviadrake",
+		"health": 180,
+		"experience": 56,
+		"weaknesses": ["electric", "ice", "fairy"],
+		"strenghts": ["water", "dragon", "dark"],
+		"abilities": [
+			{
+				"name": "heal",
+				"chance": 7
+			}
+		],
+		"reward": "Leviadrake Scaleplate"
+	},
+	{
+		"id": 2,
+		"name": "Helix Whaligon",
+		"health": 150,
+		"experience": 51,
+		"weaknesses": ["water", "ground", "rock"],
+		"strenghts": ["fire", "steel", "bug"],
+		"reward": "Molten Core Fang"
+	},
+	{
+		"id": 3,
+		"name": "Thornmax",
+		"health": 165,
+		"experience": 54,
+		"weaknesses": ["fire", "ice", "flying"],
+		"strenghts": ["grass", "ground", "water"],
+		"abilities": [
+			{
+				"name": "heal",
+				"chance": 9
+			}
+		],
+		"reward": "Farrow BleedNice"
+	},
+	{
+		"id": 4,
+		"name": "Stormhide Roczilla",
+		"health": 140,
+		"experience": 49,
+		"weaknesses": ["electric", "ice", "rock"],
+		"strenghts": ["flying", "fighting", "grass"],
+		"reward": "Tempest Talon"
+	},
+	{
+		"id": 5,
+		"name": "Nightveil Basilisk",
+		"health": 130,
+		"experience": 47,
+		"weaknesses": ["fairy", "ground", "psychic"],
+		"strenghts": ["poison", "ghost", "dark"],
+		"abilities": [
+			{
+				"name": "heal",
+				"chance": 5
+			}
+		],
+		"reward": "Basilisk Venom Gland"
+	},
+	{
+		"id": 6,
+		"name": "Glacierback Colossus",
+		"health": 200,
+		"experience": 60,
+		"weaknesses": ["fire", "fighting", "steel"],
+		"strenghts": ["ice", "rock", "normal"],
+		"reward": "Colossus Frost Core"
+	}
 ]
