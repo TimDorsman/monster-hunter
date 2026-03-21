@@ -5,7 +5,6 @@ import type {
 	AbilityRoomState,
 	HealAbilityContext,
 } from "../../../types/abilities";
-import { HUNTER_ABILITY_SUCCESS_CHANCES } from "../../../utils/battle-abilities";
 
 export class HealAbility {
 	readonly action = "heal" as const;
@@ -30,8 +29,7 @@ export class HealAbility {
 			};
 		}
 
-		const didHeal =
-			context.random() < HUNTER_ABILITY_SUCCESS_CHANCES.heal / 100;
+		const didHeal = context.random() < context.successChance / 100;
 		if (!didHeal) {
 			context.addBattleLogEntry(
 				context.room,

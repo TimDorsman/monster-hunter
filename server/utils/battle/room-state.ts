@@ -1,4 +1,5 @@
-import { type BattleRoom, type PeerLike, PLAYER_MAX_HEALTH } from "./types";
+import { createInitialBattleGameSettings } from "./settings";
+import { type BattleRoom, type PeerLike } from "./types";
 
 function createBattleRoom(): BattleRoom {
 	return {
@@ -18,6 +19,7 @@ function createBattleRoom(): BattleRoom {
 		monsterBurnRounds: 0,
 		turnHunterId: null,
 		monsterTurnTimer: null,
+		settings: createInitialBattleGameSettings(),
 	};
 }
 
@@ -36,6 +38,7 @@ export function getBattleRoom() {
 export function createDefaultHunter(
 	playerId: string,
 	role: "hunter" | "spectator",
+	maxHealth: number,
 ) {
 	return {
 		id: playerId,
@@ -44,8 +47,8 @@ export function createDefaultHunter(
 		connected: true,
 		level: 1,
 		experience: 0,
-		health: PLAYER_MAX_HEALTH,
-		maxHealth: PLAYER_MAX_HEALTH,
+		health: maxHealth,
+		maxHealth,
 		joinedAt: Date.now(),
 		attackCount: 0,
 		damagedCount: 0,

@@ -1,4 +1,5 @@
 import type { BattleAction } from "~/types/abilities";
+import type { BattleGameSettings } from "~/types/game-settings";
 import type { BattleStateMessage, ConnectionStatus } from "~/types/battle";
 
 type UseBattleSocketOptions = {
@@ -6,6 +7,7 @@ type UseBattleSocketOptions = {
 	playerName: string;
 	getPlayerLevel: () => number;
 	getPlayerExperience: () => number;
+	getGameSettings: () => BattleGameSettings;
 	onStateMessage: (message: BattleStateMessage) => void;
 };
 
@@ -64,6 +66,13 @@ export function useBattleSocket(options: UseBattleSocketOptions) {
 	function sendNewMonster() {
 		sendMessage({
 			type: "new_monster",
+		});
+	}
+
+	function sendSettings(settings: BattleGameSettings) {
+		sendMessage({
+			type: "update_settings",
+			settings,
 		});
 	}
 
@@ -138,6 +147,7 @@ export function useBattleSocket(options: UseBattleSocketOptions) {
 				level: options.getPlayerLevel(),
 				experience: options.getPlayerExperience(),
 			});
+			sendSettings(options.getGameSettings());
 		});
 
 		ws.addEventListener("message", async (event) => {
@@ -230,5 +240,6 @@ export function useBattleSocket(options: UseBattleSocketOptions) {
 		disconnect,
 		sendAction,
 		sendNewMonster,
+		sendSettings,
 	};
 }

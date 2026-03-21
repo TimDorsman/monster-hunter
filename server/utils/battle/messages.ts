@@ -1,11 +1,11 @@
 import { pickNewMonster } from "./monster-factory";
 import { createDefaultHunter } from "./room-state";
+import { applyBattleGameSettings } from "./settings";
 import {
 	type BattleRoom,
 	type ClientMessage,
 	type PeerLike,
 	MAX_HUNTERS,
-	PLAYER_MAX_HEALTH,
 } from "./types";
 import {
 	addBattleLogEntry,
@@ -55,7 +55,10 @@ export function handleBattlePeerOpen(room: BattleRoom, peer: PeerLike) {
 
 	room.playerIdByPeer.set(peer, generatedPlayerId);
 	room.peersByPlayerId.set(generatedPlayerId, peer);
-	room.hunters.set(generatedPlayerId, createDefaultHunter(generatedPlayerId, role));
+	room.hunters.set(
+		generatedPlayerId,
+		createDefaultHunter(generatedPlayerId, role, room.settings.hunter.maxHealth),
+	);
 
 	if (!room.currentMonster) {
 		pickNewMonster(room);
@@ -162,8 +165,8 @@ function handleJoinMessage(
 			connected: true,
 			level: nextLevel,
 			experience: nextExperience,
-			health: PLAYER_MAX_HEALTH,
-			maxHealth: PLAYER_MAX_HEALTH,
+			health: room.settings.hunter.maxHealth,
+			maxHealth: room.settings.hunter.maxHealth,
 			joinedAt: Date.now(),
 			attackCount: 0,
 			damagedCount: 0,
@@ -242,6 +245,12 @@ export async function handleBattlePeerMessage(
 			return;
 		}
 		pickNewMonster(room);
+		broadcastState(room);
+		return;
+	}
+
+	if (parsedMessage.type === "update_settings") {
+		applyBattleGameSettings(room, parsedMessage.settings);
 		broadcastState(room);
 	}
 }

@@ -7,24 +7,15 @@ import { MonsterHealAbility } from "../abilities/monster-heal-ability";
 import { getRandomIntInclusive } from "./random";
 import {
 	type BattleRoom,
-	type EncounterMonster,
 	MONSTER_HEAL_MIN,
 	MONSTER_HEAL_RANGE,
-	PLAYER_DAMAGE_RANGE,
-	PLAYER_DODGE_CHANCE,
-	PLAYER_HEAL_BASE,
-	PLAYER_HEAL_RANGE,
-	PLAYER_MIN_DAMAGE,
 } from "./types";
 import {
 	addBattleLogEntry,
 	broadcastState,
 	getAliveHunters,
 } from "./room-utils";
-import {
-	DEFAULT_MONSTER_ATTACK_CHANCE,
-	getMonsterAbilityChance,
-} from "../../../utils/battle-abilities";
+import { getEffectiveMonsterAttackChance } from "./settings";
 
 const attackAbility = new AttackAbility();
 const auraBeamAbility = new AuraBeamAbility();
@@ -36,9 +27,14 @@ function calculateRequiredExperience(level: number) {
 	return Math.round(60 + level * 40 + level * level * 12);
 }
 
-function rollBasePlayerDamage(hunterLevel: number, monsterLevel: number) {
+function rollBasePlayerDamage(
+	room: BattleRoom,
+	hunterLevel: number,
+	monsterLevel: number,
+) {
 	const baseDamage =
-		Math.floor(Math.random() * PLAYER_DAMAGE_RANGE) + PLAYER_MIN_DAMAGE;
+		Math.floor(Math.random() * room.settings.hunter.damageRange) +
+		room.settings.hunter.damageMin;
 	const levelMultiplier = 1 + Math.log2(hunterLevel) * 0.18;
 	const levelDelta = hunterLevel - monsterLevel;
 	const advantageMultiplier =
@@ -48,23 +44,16 @@ function rollBasePlayerDamage(hunterLevel: number, monsterLevel: number) {
 	return Math.round(baseDamage * levelMultiplier * advantageMultiplier);
 }
 
-function rollPlayerHealAmount(level: number) {
+function rollPlayerHealAmount(room: BattleRoom, level: number) {
 	const baseHeal =
-		Math.floor(Math.random() * PLAYER_HEAL_RANGE) + PLAYER_HEAL_BASE;
+		Math.floor(Math.random() * room.settings.hunter.healRange) +
+		room.settings.hunter.healBase;
 	const levelMultiplier = 1 + Math.log2(level) * 0.14;
 	return Math.max(1, Math.round(baseHeal * levelMultiplier));
 }
 
 function rollMonsterHealAmount() {
 	return Math.floor(Math.random() * MONSTER_HEAL_RANGE) + MONSTER_HEAL_MIN;
-}
-
-function getMonsterAttackChance(monster: EncounterMonster) {
-	return getMonsterAbilityChance(
-		monster.abilities,
-		"attack",
-		DEFAULT_MONSTER_ATTACK_CHANCE,
-	);
 }
 
 export function awardExperienceToHunters(room: BattleRoom, baseExperience: number) {
@@ -148,7 +137,8 @@ export function executeMonsterTurn(room: BattleRoom) {
 		} else {
 			room.monsterAttackCount += 1;
 			const didAttackHit =
-				Math.random() < getMonsterAttackChance(room.currentMonster) / 100;
+				Math.random() <
+				getEffectiveMonsterAttackChance(room, room.currentMonster) / 100;
 			const aliveHunters = getAliveHunters(room);
 
 			if (!didAttackHit) {
@@ -164,7 +154,10 @@ export function executeMonsterTurn(room: BattleRoom) {
 					continue;
 				}
 
-				if (Math.random() < PLAYER_DODGE_CHANCE) {
+				if (
+					Math.random() <
+					room.settings.hunter.dodgeChance / 100
+				) {
 					addBattleLogEntry(
 						room,
 						`${room.currentMonster.name} attacked ${hunter.name}, but they dodged.`,
@@ -279,7 +272,8 @@ export function handlePlayerAction(
 			addBattleLogEntry,
 			setNextTurnOrMonster,
 			awardExperienceToHunters,
-			rollPlayerHealAmount,
+			successChance: room.settings.hunter.abilityChances.healChance,
+			rollPlayerHealAmount: (level) => rollPlayerHealAmount(room, level),
 			random: Math.random,
 		});
 		return;
@@ -293,6 +287,7 @@ export function handlePlayerAction(
 			addBattleLogEntry,
 			setNextTurnOrMonster,
 			awardExperienceToHunters,
+			successChance: room.settings.hunter.abilityChances.burnChance,
 			random: Math.random,
 		});
 		return;
@@ -306,7 +301,9 @@ export function handlePlayerAction(
 			addBattleLogEntry,
 			setNextTurnOrMonster,
 			awardExperienceToHunters,
-			rollBasePlayerDamage,
+			successChance: room.settings.hunter.abilityChances.auraBeamChance,
+			rollBasePlayerDamage: (hunterLevel, monsterLevel) =>
+				rollBasePlayerDamage(room, hunterLevel, monsterLevel),
 			random: Math.random,
 		});
 		return;
@@ -319,7 +316,9 @@ export function handlePlayerAction(
 		addBattleLogEntry,
 		setNextTurnOrMonster,
 		awardExperienceToHunters,
-		rollBasePlayerDamage,
+		successChance: room.settings.hunter.abilityChances.attackChance,
+		rollBasePlayerDamage: (hunterLevel, monsterLevel) =>
+			rollBasePlayerDamage(room, hunterLevel, monsterLevel),
 		random: Math.random,
 	});
 }

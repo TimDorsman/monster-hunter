@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
-import { HUNTER_ABILITY_SUCCESS_CHANCES } from "../../utils/battle-abilities";
+import BattleGameSettingsPanel from "../../components/BattleGameSettingsPanel.vue";
+import type { HunterAbilityChanceSettings, HunterGameSettings, MonsterGameSettings } from "~/types/game-settings";
+import { useBattleSettingsStorage } from "../composables/battle/useBattleSettingsStorage";
 
 const {
-	PLAYER_MAX_HEALTH,
 	isLoading,
 	currentMonster,
 	monsterHealth,
 	playerHealth,
+	playerMaxHealth,
 	recentAttackLogs,
 	playerLevel,
 	playerExperience,
@@ -34,7 +36,11 @@ const {
 	monsterAttackCount,
 	monsterDamagedCount,
 	monsterBurned,
+	settings,
+	effectiveMonsterSettings,
 	initializeBattle,
+	updateGameSettings,
+	resetGameSettings,
 	pickRandomMonster,
 	addPlayerGold,
 	attackMonster,
@@ -42,6 +48,7 @@ const {
 	castBurn,
 	healHunter,
 } = useBattle();
+const { loadPanelOpenState, persistPanelOpenState } = useBattleSettingsStorage();
 
 const showLevelUpOverlay = ref(false);
 const levelUpOverlayKey = ref(0);
@@ -57,7 +64,6 @@ let hunterShakeTimer: ReturnType<typeof setTimeout> | null = null;
 let monsterShakeTimer: ReturnType<typeof setTimeout> | null = null;
 let hunterHitTimer: ReturnType<typeof setTimeout> | null = null;
 let monsterHitTimer: ReturnType<typeof setTimeout> | null = null;
-const hunterAbilitySuccessChances = HUNTER_ABILITY_SUCCESS_CHANCES;
 const goldRewardAmount = 320;
 const lootItems = [
 	{ label: "Gold", value: `${goldRewardAmount}` },
@@ -85,12 +91,16 @@ const battleLogTitle = computed(() => {
 	return "Battle Log";
 });
 
-const canHeal = computed(() => playerHealth.value < PLAYER_MAX_HEALTH);
+const canHeal = computed(() => playerHealth.value < playerMaxHealth.value);
 const isLowHealth = computed(() => playerHealthPercent.value < 20 && !battleEnded.value);
 const isCriticalHealth = computed(
 	() => playerHealthPercent.value < 10 && !battleEnded.value,
 );
 const showRoomStatus = ref(false);
+const showGameSettings = ref(loadPanelOpenState());
+const hunterAbilitySuccessChances = computed(
+	() => settings.value.hunter.abilityChances,
+);
 const isActionDisabled = computed(() => {
 	if (isLoading.value) {
 		return true;
@@ -198,6 +208,60 @@ function getRequiredExperienceForLevel(level: number) {
 	return Math.round(60 + level * 40 + level * level * 12);
 }
 
+function updateHunterSetting(
+	key: Exclude<keyof HunterGameSettings, "abilityChances">,
+	value: number,
+) {
+	updateGameSettings({
+		hunter: {
+			...settings.value.hunter,
+			abilityChances: {
+				...settings.value.hunter.abilityChances,
+			},
+			[key]: value,
+		},
+		monster: {
+			...settings.value.monster,
+		},
+	});
+}
+
+function updateHunterAbilitySetting(
+	key: keyof HunterAbilityChanceSettings,
+	value: number,
+) {
+	updateGameSettings({
+		hunter: {
+			...settings.value.hunter,
+			abilityChances: {
+				...settings.value.hunter.abilityChances,
+				[key]: value,
+			},
+		},
+		monster: {
+			...settings.value.monster,
+		},
+	});
+}
+
+function updateMonsterSetting(
+	key: keyof MonsterGameSettings,
+	value: number | null,
+) {
+	updateGameSettings({
+		hunter: {
+			...settings.value.hunter,
+			abilityChances: {
+				...settings.value.hunter.abilityChances,
+			},
+		},
+		monster: {
+			...settings.value.monster,
+			[key]: value,
+		},
+	});
+}
+
 const hunterCards = computed(() => {
 	const cards = [...activeHunters.value];
 	while (cards.length < 4) {
@@ -288,6 +352,10 @@ watch(monsterDamagedCount, () => {
 
 watch(currentEncounterKey, () => {
 	resetRewardSequence();
+});
+
+watch(showGameSettings, (isOpen) => {
+	persistPanelOpenState(isOpen);
 });
 
 watch(
@@ -437,42 +505,66 @@ onBeforeUnmount(() => {
 		</div>
 	</div>
 
-	<div class="fixed bottom-6 left-6 z-30 flex items-center gap-2">
-		<UButton
-			color="neutral"
-			variant="soft"
-			size="sm"
-			@click="showRoomStatus = !showRoomStatus"
-		>
-			{{ showRoomStatus ? "Hide Room" : "Show Room" }}
-		</UButton>
-		<UButton color="neutral" variant="subtle" size="sm" to="/">
-			Back Home
-		</UButton>
-	</div>
+	<div class="fixed bottom-6 left-6 z-30 flex flex-col-reverse items-start gap-3">
+		<div class="flex items-center gap-2">
+			<UButton
+				color="neutral"
+				variant="soft"
+				size="sm"
+				@click="showGameSettings = !showGameSettings"
+			>
+				{{ showGameSettings ? "Hide Settings" : "Game Settings" }}
+			</UButton>
+			<UButton
+				color="neutral"
+				variant="soft"
+				size="sm"
+				@click="showRoomStatus = !showRoomStatus"
+			>
+				{{ showRoomStatus ? "Hide Room" : "Show Room" }}
+			</UButton>
+			<UButton color="neutral" variant="subtle" size="sm" to="/">
+				Back Home
+			</UButton>
+		</div>
 
-	<div
-		v-if="showRoomStatus"
-		class="fixed bottom-20 left-6 z-30 w-80 rounded-xl border border-white/20 bg-black/55 p-3 backdrop-blur"
-	>
-		<p class="section-text-outline text-xs uppercase tracking-[0.16em] text-white/80">
-			Room Status
-		</p>
-		<p class="section-text-outline mt-1 text-sm font-semibold text-cyan-100">
-			Role: {{ isSpectator ? "Spectator" : "Hunter" }}
-		</p>
-		<p class="section-text-outline text-xs text-white/80">
-			Connection: {{ connectionStatus }}
-		</p>
-		<p class="section-text-outline text-xs text-white/80">
-			Active Hunters: {{ activeHunters.length }} / {{ maxHunters }}
-		</p>
-		<p class="section-text-outline text-xs text-white/80">
-			Spectators: {{ spectatorHunters.length }}
-		</p>
-		<p class="section-text-outline mt-1 text-xs text-amber-200">
-			Turn: {{ currentTurnHunterName || "Monster" }}
-		</p>
+		<Transition name="settings-panel">
+			<BattleGameSettingsPanel
+				v-if="showGameSettings"
+				:settings="settings"
+				:effective-monster-settings="effectiveMonsterSettings"
+				@update-hunter-setting="updateHunterSetting($event.key, $event.value)"
+				@update-hunter-ability-setting="updateHunterAbilitySetting($event.key, $event.value)"
+				@update-monster-setting="updateMonsterSetting($event.key, $event.value)"
+				@reset="resetGameSettings"
+			/>
+		</Transition>
+
+		<Transition name="settings-panel">
+			<div
+				v-if="showRoomStatus"
+				class="w-[min(20rem,calc(100vw-3rem))] rounded-xl border border-white/20 bg-black/55 p-3 backdrop-blur"
+			>
+				<p class="section-text-outline text-xs uppercase tracking-[0.16em] text-white/80">
+					Room Status
+				</p>
+				<p class="section-text-outline mt-1 text-sm font-semibold text-cyan-100">
+					Role: {{ isSpectator ? "Spectator" : "Hunter" }}
+				</p>
+				<p class="section-text-outline text-xs text-white/80">
+					Connection: {{ connectionStatus }}
+				</p>
+				<p class="section-text-outline text-xs text-white/80">
+					Active Hunters: {{ activeHunters.length }} / {{ maxHunters }}
+				</p>
+				<p class="section-text-outline text-xs text-white/80">
+					Spectators: {{ spectatorHunters.length }}
+				</p>
+				<p class="section-text-outline mt-1 text-xs text-amber-200">
+					Turn: {{ currentTurnHunterName || "Monster" }}
+				</p>
+			</div>
+		</Transition>
 	</div>
 
 	<main class="min-h-screen px-8 pb-32 pt-10 text-white">
@@ -655,7 +747,7 @@ onBeforeUnmount(() => {
 					<Icon class="ability-icon" icon="mdi:sword-cross" />
 					Attack
 				</span>
-				<span class="ability-chance">{{ hunterAbilitySuccessChances.attack }}%</span>
+				<span class="ability-chance">{{ hunterAbilitySuccessChances.attackChance }}%</span>
 			</UButton>
 
 			<UButton
@@ -669,7 +761,7 @@ onBeforeUnmount(() => {
 					<Icon class="ability-icon ability-icon-spin" icon="mdi:star-four-points-circle" />
 					Aura Beam
 				</span>
-				<span class="ability-chance">{{ hunterAbilitySuccessChances.auraBeam }}%</span>
+				<span class="ability-chance">{{ hunterAbilitySuccessChances.auraBeamChance }}%</span>
 			</UButton>
 
 			<UButton
@@ -683,7 +775,7 @@ onBeforeUnmount(() => {
 					<Icon class="ability-icon" icon="mdi:heart-plus" />
 					Heal
 				</span>
-				<span class="ability-chance">{{ hunterAbilitySuccessChances.heal }}%</span>
+				<span class="ability-chance">{{ hunterAbilitySuccessChances.healChance }}%</span>
 			</UButton>
 
 			<UButton
@@ -697,7 +789,7 @@ onBeforeUnmount(() => {
 					<Icon class="ability-icon" icon="mdi:fire" />
 					Burn
 				</span>
-				<span class="ability-chance">{{ hunterAbilitySuccessChances.burn }}%</span>
+				<span class="ability-chance">{{ hunterAbilitySuccessChances.burnChance }}%</span>
 			</UButton>
 			<UButton
 				class="ability-button ability-button-empty"
@@ -770,6 +862,19 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.settings-panel-enter-active,
+.settings-panel-leave-active {
+	transition:
+		opacity 0.24s ease,
+		transform 0.24s ease;
+}
+
+.settings-panel-enter-from,
+.settings-panel-leave-to {
+	opacity: 0;
+	transform: translateY(12px) scale(0.98);
+}
+
 .level-up-overlay {
 	position: fixed;
 	inset: 0;

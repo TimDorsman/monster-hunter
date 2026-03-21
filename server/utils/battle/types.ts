@@ -1,4 +1,5 @@
 import type { BattleAction } from "../../../types/abilities";
+import type { BattleGameSettings } from "../../../types/game-settings";
 import type { MonsterAbilityName } from "../../../utils/battle-abilities";
 
 export type ElementType =
@@ -39,8 +40,13 @@ export type EncounterMonster = Monster & {
 	level: number;
 	baseHealth: number;
 	baseExperience: number;
+	defaultHealth: number;
 	retaliationMinDamage: number;
 	retaliationDamageRange: number;
+	defaultRetaliationMinDamage: number;
+	defaultRetaliationDamageRange: number;
+	defaultAttackChance: number;
+	defaultHealChance: number;
 	experienceReward: number;
 };
 
@@ -86,6 +92,10 @@ export type ClientMessage =
 	  }
 	| {
 			type: "new_monster";
+	  }
+	| {
+			type: "update_settings";
+			settings: BattleGameSettings;
 	  };
 
 export type BattleStatePayload = {
@@ -103,6 +113,7 @@ export type BattleStatePayload = {
 		turnHunterId: string | null;
 		maxHunters: number;
 		hunters: HunterState[];
+		settings: BattleGameSettings;
 	};
 };
 
@@ -127,14 +138,9 @@ export type BattleRoom = {
 	monsterBurnRounds: number;
 	turnHunterId: string | null;
 	monsterTurnTimer: ReturnType<typeof setTimeout> | null;
+	settings: BattleGameSettings;
 };
 
-export const PLAYER_MAX_HEALTH = 100;
 export const MAX_HUNTERS = 4;
-export const PLAYER_MIN_DAMAGE = 12;
-export const PLAYER_DAMAGE_RANGE = 19;
-export const PLAYER_HEAL_BASE = 12;
-export const PLAYER_HEAL_RANGE = 9;
-export const PLAYER_DODGE_CHANCE = 0.1;
 export const MONSTER_HEAL_MIN = 10;
 export const MONSTER_HEAL_RANGE = 11;

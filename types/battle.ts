@@ -1,3 +1,5 @@
+import type { BattleGameSettings } from "./game-settings";
+
 export type Monster = {
 	id: number;
 	name: string;
@@ -6,15 +8,20 @@ export type Monster = {
 	weaknesses: string[];
 	strenghts: string[];
 	abilities?: Array<{
-		name: "heal";
+		name: "attack" | "heal";
 		chance: number;
 	}>;
 	reward: string;
 	level: number;
 	baseHealth: number;
 	baseExperience: number;
+	defaultHealth: number;
 	retaliationMinDamage: number;
 	retaliationDamageRange: number;
+	defaultRetaliationMinDamage: number;
+	defaultRetaliationDamageRange: number;
+	defaultAttackChance: number;
+	defaultHealChance: number;
 	experienceReward: number;
 };
 
@@ -56,6 +63,7 @@ export type BattleStateMessage = {
 		turnHunterId: string | null;
 		maxHunters: number;
 		hunters: BattleHunterState[];
+		settings: BattleGameSettings;
 	};
 };
 

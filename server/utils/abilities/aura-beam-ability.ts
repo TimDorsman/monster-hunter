@@ -5,7 +5,6 @@ import type {
 	AbilityRoomState,
 	AuraBeamAbilityContext,
 } from "../../../types/abilities";
-import { HUNTER_ABILITY_SUCCESS_CHANCES } from "../../../utils/battle-abilities";
 
 const AURA_BEAM_DAMAGE_MULTIPLIER = 1.5;
 
@@ -19,8 +18,7 @@ export class AuraBeamAbility {
 	>(
 		context: AuraBeamAbilityContext<TRoom, THunter, TMonster>,
 	): AbilityExecutionResult {
-		const didHit =
-			context.random() < HUNTER_ABILITY_SUCCESS_CHANCES.auraBeam / 100;
+		const didHit = context.random() < context.successChance / 100;
 		const playerDamage = Math.round(
 			context.rollBasePlayerDamage(
 				context.hunter.level,
