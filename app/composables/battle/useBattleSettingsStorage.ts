@@ -1,8 +1,8 @@
-import type { BattleGameSettings } from "~/types/game-settings";
+import type { BattleGameSettings } from "~~/types/game-settings";
 import {
 	createDefaultBattleGameSettings,
 	sanitizeBattleGameSettings,
-} from "../../../utils/game-settings";
+} from "~~/utils/game-settings";
 
 const GAME_SETTINGS_STORAGE_KEY = "monster-hunter-game-settings-v1";
 const GAME_SETTINGS_PANEL_STORAGE_KEY = "monster-hunter-game-settings-panel-v1";

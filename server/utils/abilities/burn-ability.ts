@@ -6,7 +6,7 @@ import type {
 	BurnAbilityContext,
 	BurnEffectContext,
 	StatusEffectResult,
-} from "../../../types/abilities";
+} from "~~/types/abilities";
 
 const BURN_ROUNDS = 3;
 const BURN_MIN_PERCENT = 3;

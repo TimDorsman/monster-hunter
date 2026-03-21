@@ -1,4 +1,4 @@
-import type { BattleAction } from "../../../types/abilities";
+import type { BattleAction } from "~~/types/abilities";
 import { AttackAbility } from "../abilities/attack-ability";
 import { AuraBeamAbility } from "../abilities/aura-beam-ability";
 import { BurnAbility } from "../abilities/burn-ability";

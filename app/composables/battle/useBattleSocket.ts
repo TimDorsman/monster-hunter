@@ -1,6 +1,6 @@
-import type { BattleAction } from "~/types/abilities";
-import type { BattleGameSettings } from "~/types/game-settings";
-import type { BattleStateMessage, ConnectionStatus } from "~/types/battle";
+import type { BattleAction } from "~~/types/abilities";
+import type { BattleGameSettings } from "~~/types/game-settings";
+import type { BattleStateMessage, ConnectionStatus } from "~~/types/battle";
 
 type UseBattleSocketOptions = {
 	playerId: string;

@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
-import BattleGameSettingsPanel from "../../components/BattleGameSettingsPanel.vue";
-import type { HunterAbilityChanceSettings, HunterGameSettings, MonsterGameSettings } from "~/types/game-settings";
-import { useBattleSettingsStorage } from "../composables/battle/useBattleSettingsStorage";
+import type { HunterAbilityChanceSettings, HunterGameSettings, MonsterGameSettings } from "~~/types/game-settings";
+import { useBattleSettingsStorage } from "~/composables/battle/useBattleSettingsStorage";
 
 const {
 	isLoading,

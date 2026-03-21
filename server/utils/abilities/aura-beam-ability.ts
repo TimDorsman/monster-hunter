@@ -4,7 +4,7 @@ import type {
 	AbilityMonsterState,
 	AbilityRoomState,
 	AuraBeamAbilityContext,
-} from "../../../types/abilities";
+} from "~~/types/abilities";
 
 const AURA_BEAM_DAMAGE_MULTIPLIER = 1.5;
 

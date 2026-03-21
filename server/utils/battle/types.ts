@@ -1,6 +1,6 @@
-import type { BattleAction } from "../../../types/abilities";
-import type { BattleGameSettings } from "../../../types/game-settings";
-import type { MonsterAbilityName } from "../../../utils/battle-abilities";
+import type { BattleAction } from "~~/types/abilities";
+import type { BattleGameSettings } from "~~/types/game-settings";
+import type { MonsterAbilityName } from "~~/utils/battle-abilities";
 
 export type ElementType =
 	| "normal"

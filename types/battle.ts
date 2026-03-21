@@ -1,4 +1,4 @@
-import type { BattleGameSettings } from "./game-settings";
+import type { BattleGameSettings } from "~~/types/game-settings";
 
 export type Monster = {
 	id: number;

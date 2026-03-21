@@ -3,7 +3,7 @@ import type {
 	AbilityMonsterState,
 	AbilityRoomState,
 	MonsterHealAbilityContext,
-} from "../../../types/abilities";
+} from "~~/types/abilities";
 
 export class MonsterHealAbility {
 	readonly action = "heal" as const;
