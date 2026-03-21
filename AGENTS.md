@@ -495,6 +495,50 @@ updated_at
 
 If a request conflicts with this document, this document takes precedence unless explicitly overridden.
 
+## Pull Request Instructions
+
+When creating a pull request:
+
+- ALWAYS use the template defined in `.github/pull_request_template.md`
+- The template is the single source of truth
+- DO NOT invent, reformat, or restructure the PR description
+- DO NOT skip any sections
+
+Execution rules:
+
+1. Read `.github/pull_request_template.md`
+2. Reproduce its structure exactly
+3. Only replace placeholder values (e.g. `<user_type>`, `<what changed>`)
+4. Preserve all headings, spacing, and formatting exactly as written
+
+Formatting rules:
+
+- Markdown must render correctly on GitHub
+- Lists must remain properly formatted (no collapsed lines)
+- Sections must remain separated by blank lines
+- Do not convert structured sections into paragraphs
+
+Content rules:
+
+- Context must be brief and non-technical (1–2 sentences)
+- Fix must be brief and clear (1–2 sentences)
+- Use plain language (e.g. "This happened because X and Y")
+
+Failure handling:
+
+- If `.github/pull_request_template.md` cannot be read or is missing:
+    - STOP
+    - Do NOT generate a PR body
+    - Ask for clarification instead
+
+- If using `gh pr create`:
+    - DO NOT use `--body` with inline text
+    - Prefer default template loading or `--body-file`
+
+Strict rule:
+
+- Any PR that does not follow the template exactly is invalid
+
 ---
 
 End of AGENTS.md
