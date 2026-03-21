@@ -48,6 +48,7 @@ const levelUpOverlayKey = ref(0);
 let levelUpOverlayTimer: ReturnType<typeof setTimeout> | null = null;
 const showChest = ref(false);
 const showLootPopup = ref(false);
+const hasInitializedRewardState = ref(false);
 const isHunterCardShaking = ref(false);
 const isMonsterCardShaking = ref(false);
 const isHunterCardHit = ref(false);
@@ -291,9 +292,20 @@ watch(currentEncounterKey, () => {
 
 watch(
 	() => Boolean(currentMonster.value) && battleEnded.value && monsterDefeated.value,
-	(isMonsterKilled) => {
+	(isMonsterKilled, wasMonsterKilled) => {
+		if (!hasInitializedRewardState.value) {
+			hasInitializedRewardState.value = true;
+			if (!isMonsterKilled) {
+				resetRewardSequence();
+			}
+			return;
+		}
+
 		if (!isMonsterKilled) {
 			resetRewardSequence();
+			return;
+		}
+		if (wasMonsterKilled) {
 			return;
 		}
 
