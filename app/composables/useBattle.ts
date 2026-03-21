@@ -1,13 +1,13 @@
-import type { BattleHunterState, BattleLogEntry, BattleStateMessage, Monster } from "~/types/battle";
-import type { BattleGameSettings } from "~/types/game-settings";
+import type { BattleHunterState, BattleLogEntry, BattleStateMessage, Monster } from "~~/types/battle";
+import type { BattleGameSettings } from "~~/types/game-settings";
 import {
 	createDefaultBattleGameSettings,
 	sanitizeBattleGameSettings,
-} from "../../utils/game-settings";
-import { getMonsterAbilityChance } from "../../utils/battle-abilities";
-import { calculateRequiredExperience, useBattleProgress } from "./battle/useBattleProgress";
-import { useBattleSettingsStorage } from "./battle/useBattleSettingsStorage";
-import { useBattleSocket } from "./battle/useBattleSocket";
+} from "~~/utils/game-settings";
+import { getMonsterAbilityChance } from "~~/utils/battle-abilities";
+import { calculateRequiredExperience, useBattleProgress } from "~/composables/battle/useBattleProgress";
+import { useBattleSettingsStorage } from "~/composables/battle/useBattleSettingsStorage";
+import { useBattleSocket } from "~/composables/battle/useBattleSocket";
 
 const PLAYER_NAME = "Swifty Mercury";
 

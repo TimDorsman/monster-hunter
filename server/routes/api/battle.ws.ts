@@ -2,8 +2,8 @@ import {
 	handleBattlePeerClose,
 	handleBattlePeerMessage,
 	handleBattlePeerOpen,
-} from "../../utils/battle/messages";
-import { getBattleRoom } from "../../utils/battle/room-state";
+} from "~~/server/utils/battle/messages";
+import { getBattleRoom } from "~~/server/utils/battle/room-state";
 
 export default defineWebSocketHandler({
 	open(peer) {

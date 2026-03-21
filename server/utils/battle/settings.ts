@@ -1,8 +1,8 @@
 import {
 	createDefaultBattleGameSettings,
 	sanitizeBattleGameSettings,
-} from "../../../utils/game-settings";
-import { DEFAULT_MONSTER_ATTACK_CHANCE, getMonsterAbilityChance } from "../../../utils/battle-abilities";
+} from "~~/utils/game-settings";
+import { DEFAULT_MONSTER_ATTACK_CHANCE, getMonsterAbilityChance } from "~~/utils/battle-abilities";
 import type { BattleRoom, EncounterMonster, Monster } from "./types";
 
 function clamp(value: number, min: number, max: number) {

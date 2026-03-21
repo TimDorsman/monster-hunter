@@ -1,4 +1,4 @@
-import type { BattleGameSettings, MonsterGameSettings } from "../types/game-settings";
+import type { BattleGameSettings, MonsterGameSettings } from "~~/types/game-settings";
 
 function clampInteger(value: number, min: number, max: number) {
 	return Math.min(max, Math.max(min, Math.round(value)));

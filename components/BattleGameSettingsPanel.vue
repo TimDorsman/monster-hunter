@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { BattleGameSettings, HunterAbilityChanceSettings, HunterGameSettings, MonsterGameSettings } from "~/types/game-settings";
-import { GAME_SETTINGS_LIMITS } from "../utils/game-settings";
+import type { BattleGameSettings, HunterAbilityChanceSettings, HunterGameSettings, MonsterGameSettings } from "~~/types/game-settings";
+import { GAME_SETTINGS_LIMITS } from "~~/utils/game-settings";
 
 type EffectiveMonsterSettings = {
 	health: number;

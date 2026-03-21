@@ -1,9 +1,9 @@
-import monsters from "../../../app/data/monsters.json";
+import monsters from "~~/app/data/monsters.json";
 import { MonsterHealAbility } from "../abilities/monster-heal-ability";
 import {
 	DEFAULT_MONSTER_ATTACK_CHANCE,
 	getMonsterAbilityChance,
-} from "../../../utils/battle-abilities";
+} from "~~/utils/battle-abilities";
 import { getRandomIntInclusive } from "./random";
 import {
 	applyEffectiveStatsToMonster,

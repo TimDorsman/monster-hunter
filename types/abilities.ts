@@ -1,4 +1,4 @@
-import type { MonsterAbilityName } from "../utils/battle-abilities";
+import type { MonsterAbilityName } from "~~/utils/battle-abilities";
 
 export type HunterAbilityAction = "auraBeam" | "heal" | "burn";
 
