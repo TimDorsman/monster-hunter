@@ -22,6 +22,7 @@ export function useBattle() {
 	const initialProgress = loadPlayerProgress();
 	const playerLevel = ref(initialProgress.level);
 	const playerExperience = ref(initialProgress.experience);
+	const playerGold = ref(initialProgress.gold);
 	const playerHealth = ref(PLAYER_MAX_HEALTH);
 	const levelUpAnnouncementCount = ref(0);
 	const hunterAttackCount = ref(0);
@@ -121,7 +122,7 @@ export function useBattle() {
 			hunterAttackCount.value = self.attackCount;
 			hunterDamagedCount.value = self.damagedCount;
 			levelUpAnnouncementCount.value = self.levelUpCount;
-			persistPlayerProgress(self.level, self.experience);
+			persistPlayerProgress(self.level, self.experience, playerGold.value);
 		} else {
 			isSpectator.value = false;
 			playerHealth.value = PLAYER_MAX_HEALTH;
@@ -158,6 +159,19 @@ export function useBattle() {
 		socket.sendNewMonster();
 	}
 
+	function addPlayerGold(amount: number) {
+		if (amount <= 0) {
+			return;
+		}
+
+		playerGold.value += Math.floor(amount);
+		persistPlayerProgress(
+			playerLevel.value,
+			playerExperience.value,
+			playerGold.value,
+		);
+	}
+
 	function initializeBattle() {
 		isLoading.value = true;
 		socket.connect();
@@ -173,6 +187,7 @@ export function useBattle() {
 		recentAttackLogs,
 		playerLevel,
 		playerExperience,
+		playerGold,
 		levelUpAnnouncementCount,
 		hunterAttackCount,
 		hunterDamagedCount,
@@ -199,6 +214,7 @@ export function useBattle() {
 		selfHunter,
 		initializeBattle,
 		pickRandomMonster,
+		addPlayerGold,
 		attackMonster,
 		castAuraBeam,
 		castBurn,
