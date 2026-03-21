@@ -7,7 +7,6 @@ import type {
 	BurnEffectContext,
 	StatusEffectResult,
 } from "../../../types/abilities";
-import { HUNTER_ABILITY_SUCCESS_CHANCES } from "../../../utils/battle-abilities";
 
 const BURN_ROUNDS = 3;
 const BURN_MIN_PERCENT = 3;
@@ -23,8 +22,7 @@ export class BurnAbility {
 	>(
 		context: BurnAbilityContext<TRoom, THunter, TMonster>,
 	): AbilityExecutionResult {
-		const didHit =
-			context.random() < HUNTER_ABILITY_SUCCESS_CHANCES.burn / 100;
+		const didHit = context.random() < context.successChance / 100;
 
 		if (didHit) {
 			context.room.monsterBurnRounds = BURN_ROUNDS;

@@ -5,7 +5,6 @@ import type {
 	AbilityRoomState,
 	AttackAbilityContext,
 } from "../../../types/abilities";
-import { HUNTER_ABILITY_SUCCESS_CHANCES } from "../../../utils/battle-abilities";
 
 export class AttackAbility {
 	readonly action = "attack" as const;
@@ -17,8 +16,7 @@ export class AttackAbility {
 	>(
 		context: AttackAbilityContext<TRoom, THunter, TMonster>,
 	): AbilityExecutionResult {
-		const didHit =
-			context.random() < HUNTER_ABILITY_SUCCESS_CHANCES.attack / 100;
+		const didHit = context.random() < context.successChance / 100;
 		if (!didHit) {
 			context.addBattleLogEntry(
 				context.room,

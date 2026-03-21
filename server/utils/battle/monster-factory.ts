@@ -6,6 +6,11 @@ import {
 } from "../../../utils/battle-abilities";
 import { getRandomIntInclusive } from "./random";
 import {
+	applyEffectiveStatsToMonster,
+	getDefaultMonsterAttackChance,
+	getDefaultMonsterHealChance,
+} from "./settings";
+import {
 	type BattleRoom,
 	type EncounterMonster,
 	type Monster,
@@ -63,6 +68,7 @@ function rollMonsterLevelForParty(avgHunterLevel: number) {
 }
 
 function createEncounterMonster(
+	room: BattleRoom,
 	monster: Monster,
 	level: number,
 ): EncounterMonster {
@@ -89,17 +95,37 @@ function createEncounterMonster(
 				(0.9 + speciesPower * 0.2),
 		),
 	);
+	const defaultAttackChance = getDefaultMonsterAttackChance(monster);
+	const defaultHealChance = getDefaultMonsterHealChance(monster);
 
-	return {
+	const encounter: EncounterMonster = {
 		...monster,
 		level,
 		baseHealth: monster.health,
 		baseExperience: monster.experience,
+		defaultHealth: scaledHealth,
 		health: scaledHealth,
+		defaultRetaliationMinDamage: retaliationMinDamage,
+		defaultRetaliationDamageRange: retaliationDamageRange,
 		retaliationMinDamage,
 		retaliationDamageRange,
+		defaultAttackChance,
+		defaultHealChance,
+		abilities: [
+			{
+				name: "attack",
+				chance: defaultAttackChance,
+			},
+			{
+				name: "heal",
+				chance: defaultHealChance,
+			},
+		],
 		experienceReward,
 	};
+
+	applyEffectiveStatsToMonster(room, encounter);
+	return encounter;
 }
 
 export function pickNewMonster(room: BattleRoom) {
@@ -125,7 +151,7 @@ export function pickNewMonster(room: BattleRoom) {
 				)
 			: 1;
 	const monsterLevel = rollMonsterLevelForParty(avgHunterLevel);
-	const encounter = createEncounterMonster(selectedMonster, monsterLevel);
+	const encounter = createEncounterMonster(room, selectedMonster, monsterLevel);
 
 	room.currentMonster = encounter;
 	room.monsterHealth = encounter.health;

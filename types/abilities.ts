@@ -58,6 +58,7 @@ export interface AuraBeamAbilityContext<
 	THunter extends AbilityHunterState = AbilityHunterState,
 	TMonster extends AbilityMonsterState = AbilityMonsterState,
 > extends AbilityContext<TRoom, THunter, TMonster> {
+	successChance: number;
 	rollBasePlayerDamage: (
 		hunterLevel: number,
 		monsterLevel: number,
@@ -70,6 +71,7 @@ export interface AttackAbilityContext<
 	THunter extends AbilityHunterState = AbilityHunterState,
 	TMonster extends AbilityMonsterState = AbilityMonsterState,
 > extends AbilityContext<TRoom, THunter, TMonster> {
+	successChance: number;
 	rollBasePlayerDamage: (
 		hunterLevel: number,
 		monsterLevel: number,
@@ -82,6 +84,7 @@ export interface HealAbilityContext<
 	THunter extends AbilityHunterState = AbilityHunterState,
 	TMonster extends AbilityMonsterState = AbilityMonsterState,
 > extends AbilityContext<TRoom, THunter, TMonster> {
+	successChance: number;
 	rollPlayerHealAmount: (level: number) => number;
 	random: () => number;
 }
@@ -105,6 +108,7 @@ export interface BurnAbilityContext<
 	THunter extends AbilityHunterState = AbilityHunterState,
 	TMonster extends AbilityMonsterState = AbilityMonsterState,
 > extends AbilityContext<TRoom, THunter, TMonster> {
+	successChance: number;
 	random: () => number;
 }
 

@@ -1,8 +1,14 @@
 import type { BattleHunterState, BattleLogEntry, BattleStateMessage, Monster } from "~/types/battle";
+import type { BattleGameSettings } from "~/types/game-settings";
+import {
+	createDefaultBattleGameSettings,
+	sanitizeBattleGameSettings,
+} from "../../utils/game-settings";
+import { getMonsterAbilityChance } from "../../utils/battle-abilities";
 import { calculateRequiredExperience, useBattleProgress } from "./battle/useBattleProgress";
+import { useBattleSettingsStorage } from "./battle/useBattleSettingsStorage";
 import { useBattleSocket } from "./battle/useBattleSocket";
 
-const PLAYER_MAX_HEALTH = 100;
 const PLAYER_NAME = "Swifty Mercury";
 
 export function useBattle() {
@@ -18,12 +24,15 @@ export function useBattle() {
 	const isSpectator = ref(false);
 
 	const { getOrCreatePlayerId, loadPlayerProgress, persistPlayerProgress } = useBattleProgress();
+	const { loadGameSettings, persistGameSettings } = useBattleSettingsStorage();
 	const playerId = getOrCreatePlayerId();
 	const initialProgress = loadPlayerProgress();
+	const initialSettings = loadGameSettings();
 	const playerLevel = ref(initialProgress.level);
 	const playerExperience = ref(initialProgress.experience);
 	const playerGold = ref(initialProgress.gold);
-	const playerHealth = ref(PLAYER_MAX_HEALTH);
+	const settings = ref<BattleGameSettings>(initialSettings);
+	const playerHealth = ref(initialSettings.hunter.maxHealth);
 	const levelUpAnnouncementCount = ref(0);
 	const hunterAttackCount = ref(0);
 	const hunterDamagedCount = ref(0);
@@ -34,6 +43,9 @@ export function useBattle() {
 
 	const selfHunter = computed(() =>
 		hunters.value.find((hunter) => hunter.id === playerId) ?? null,
+	);
+	const playerMaxHealth = computed(
+		() => selfHunter.value?.maxHealth ?? settings.value.hunter.maxHealth,
 	);
 	const activeHunters = computed(() =>
 		hunters.value.filter((hunter) => hunter.role === "hunter"),
@@ -64,7 +76,7 @@ export function useBattle() {
 		),
 	);
 	const playerHealthPercent = computed(() =>
-		Math.max(0, Math.round((playerHealth.value / PLAYER_MAX_HEALTH) * 100)),
+		Math.max(0, Math.round((playerHealth.value / playerMaxHealth.value) * 100)),
 	);
 	const monsterHealthPercent = computed(() => {
 		if (!currentMonster.value) {
@@ -80,6 +92,30 @@ export function useBattle() {
 	const monsterBurned = computed(() => monsterBurnRounds.value > 0);
 	const playerDefeated = computed(() => playerHealth.value <= 0);
 	const recentAttackLogs = computed(() => attackLogs.value.slice(-8));
+	const effectiveMonsterSettings = computed(() => {
+		const activeMonster = currentMonster.value;
+		return {
+			health: settings.value.monster.health ?? activeMonster?.health ?? 0,
+			retaliationMinDamage:
+				settings.value.monster.retaliationMinDamage ??
+				activeMonster?.retaliationMinDamage ??
+				0,
+			retaliationDamageRange:
+				settings.value.monster.retaliationDamageRange ??
+				activeMonster?.retaliationDamageRange ??
+				0,
+			attackChance:
+				settings.value.monster.attackChance ??
+				(activeMonster
+					? getMonsterAbilityChance(activeMonster.abilities, "attack", 0)
+					: 0),
+			healChance:
+				settings.value.monster.healChance ??
+				(activeMonster
+					? getMonsterAbilityChance(activeMonster.abilities, "heal", 0)
+					: 0),
+		};
+	});
 	const isMyTurn = computed(() => {
 		if (battleEnded.value || isSpectator.value) {
 			return false;
@@ -112,6 +148,8 @@ export function useBattle() {
 		monsterDamagedCount.value = nextState.monsterDamagedCount;
 		monsterHealedCount.value = nextState.monsterHealedCount;
 		monsterBurnRounds.value = nextState.monsterBurnRounds;
+		settings.value = sanitizeBattleGameSettings(nextState.settings);
+		persistGameSettings(settings.value);
 
 		const self = nextState.hunters.find((hunter) => hunter.id === playerId);
 		if (self) {
@@ -125,7 +163,7 @@ export function useBattle() {
 			persistPlayerProgress(self.level, self.experience, playerGold.value);
 		} else {
 			isSpectator.value = false;
-			playerHealth.value = PLAYER_MAX_HEALTH;
+			playerHealth.value = settings.value.hunter.maxHealth;
 		}
 
 		isLoading.value = false;
@@ -136,8 +174,20 @@ export function useBattle() {
 		playerName: PLAYER_NAME,
 		getPlayerLevel: () => playerLevel.value,
 		getPlayerExperience: () => playerExperience.value,
+		getGameSettings: () => settings.value,
 		onStateMessage: applyStateMessage,
 	});
+
+	function updateGameSettings(nextSettings: BattleGameSettings) {
+		const sanitizedSettings = sanitizeBattleGameSettings(nextSettings);
+		settings.value = sanitizedSettings;
+		persistGameSettings(sanitizedSettings);
+		socket.sendSettings(sanitizedSettings);
+	}
+
+	function resetGameSettings() {
+		updateGameSettings(createDefaultBattleGameSettings());
+	}
 
 	function attackMonster() {
 		socket.sendAction("attack");
@@ -178,12 +228,12 @@ export function useBattle() {
 	}
 
 	return {
-		PLAYER_MAX_HEALTH,
 		isLoading,
 		connectionStatus: socket.connectionStatus,
 		currentMonster,
 		monsterHealth,
 		playerHealth,
+		playerMaxHealth,
 		recentAttackLogs,
 		playerLevel,
 		playerExperience,
@@ -207,12 +257,16 @@ export function useBattle() {
 		monsterBurnRounds,
 		monsterBurned,
 		isSpectator,
+		settings,
+		effectiveMonsterSettings,
 		activeHunters,
 		spectatorHunters,
 		currentTurnHunterName,
 		maxHunters,
 		selfHunter,
 		initializeBattle,
+		updateGameSettings,
+		resetGameSettings,
 		pickRandomMonster,
 		addPlayerGold,
 		attackMonster,
