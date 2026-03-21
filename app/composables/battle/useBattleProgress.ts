@@ -29,6 +29,7 @@ export function useBattleProgress() {
 			return {
 				level: 1,
 				experience: 0,
+				gold: 0,
 			};
 		}
 
@@ -38,31 +39,36 @@ export function useBattleProgress() {
 				return {
 					level: 1,
 					experience: 0,
+					gold: 0,
 				};
 			}
 
 			const parsedProgress = JSON.parse(rawProgress) as Partial<{
 				level: number;
 				experience: number;
+				gold: number;
 			}>;
 			const level = Number(parsedProgress.level);
 			const experience = Number(parsedProgress.experience);
+			const gold = Number(parsedProgress.gold);
 			return {
 				level: Number.isFinite(level) && level >= 1 ? Math.floor(level) : 1,
 				experience:
 					Number.isFinite(experience) && experience >= 0
 						? Math.floor(experience)
 						: 0,
+				gold: Number.isFinite(gold) && gold >= 0 ? Math.floor(gold) : 0,
 			};
 		} catch {
 			return {
 				level: 1,
 				experience: 0,
+				gold: 0,
 			};
 		}
 	}
 
-	function persistPlayerProgress(level: number, experience: number) {
+	function persistPlayerProgress(level: number, experience: number, gold: number) {
 		if (!import.meta.client) {
 			return;
 		}
@@ -72,6 +78,7 @@ export function useBattleProgress() {
 			JSON.stringify({
 				level,
 				experience,
+				gold,
 			}),
 		);
 	}

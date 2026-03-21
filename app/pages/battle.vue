@@ -11,6 +11,7 @@ const {
 	recentAttackLogs,
 	playerLevel,
 	playerExperience,
+	playerGold,
 	levelUpAnnouncementCount,
 	experienceRequiredForNextLevel,
 	monsterHealthPercent,
@@ -35,6 +36,7 @@ const {
 	monsterBurned,
 	initializeBattle,
 	pickRandomMonster,
+	addPlayerGold,
 	attackMonster,
 	castAuraBeam,
 	castBurn,
@@ -44,6 +46,8 @@ const {
 const showLevelUpOverlay = ref(false);
 const levelUpOverlayKey = ref(0);
 let levelUpOverlayTimer: ReturnType<typeof setTimeout> | null = null;
+const showChest = ref(false);
+const showLootPopup = ref(false);
 const isHunterCardShaking = ref(false);
 const isMonsterCardShaking = ref(false);
 const isHunterCardHit = ref(false);
@@ -53,7 +57,12 @@ let monsterShakeTimer: ReturnType<typeof setTimeout> | null = null;
 let hunterHitTimer: ReturnType<typeof setTimeout> | null = null;
 let monsterHitTimer: ReturnType<typeof setTimeout> | null = null;
 const hunterAbilitySuccessChances = HUNTER_ABILITY_SUCCESS_CHANCES;
-const hasOpenedLootChest = ref(false);
+const goldRewardAmount = 320;
+const lootItems = [
+	{ label: "Gold", value: `${goldRewardAmount}` },
+	{ label: "Hunter Potion", value: "2x Mega Potion" },
+	{ label: "Rare Material", value: "1x Wyvern Fang" },
+];
 
 const monsterImageSrc = computed(() => {
 	if (!currentMonster.value) {
@@ -163,23 +172,24 @@ const currentEncounterKey = computed(() => {
 
 	return `${currentMonster.value.id}-${currentMonster.value.level}-${currentMonster.value.health}`;
 });
-const showLootChest = computed(
-	() => Boolean(currentMonster.value) && battleEnded.value && monsterDefeated.value,
+const isRewardSequenceActive = computed(
+	() => showChest.value || showLootPopup.value,
 );
-const revealedLootLabel = computed(() => {
-	if (!currentMonster.value) {
-		return "";
-	}
 
-	return currentMonster.value.reward;
-});
+function resetRewardSequence() {
+	showChest.value = false;
+	showLootPopup.value = false;
+}
 
-function handleLootChestClick() {
-	hasOpenedLootChest.value = true;
+function handleChestClick() {
+	showChest.value = false;
+	showLootPopup.value = true;
 }
 
 function handleLootClaim() {
-	hasOpenedLootChest.value = false;
+	addPlayerGold(goldRewardAmount);
+	showLootPopup.value = false;
+	showChest.value = false;
 	pickRandomMonster();
 }
 
@@ -276,8 +286,21 @@ watch(monsterDamagedCount, () => {
 });
 
 watch(currentEncounterKey, () => {
-	hasOpenedLootChest.value = false;
+	resetRewardSequence();
 });
+
+watch(
+	() => Boolean(currentMonster.value) && battleEnded.value && monsterDefeated.value,
+	(isMonsterKilled) => {
+		if (!isMonsterKilled) {
+			resetRewardSequence();
+			return;
+		}
+
+		showChest.value = true;
+		showLootPopup.value = false;
+	},
+);
 
 onMounted(() => {
 	initializeBattle();
@@ -317,48 +340,69 @@ onBeforeUnmount(() => {
 		<p class="level-up-text text-center">LEVEL UP!</p>
 	</div>
 
-	<div v-if="showLootChest" class="loot-overlay">
-		<div class="loot-stage">
-			<transition name="loot-pop">
-				<button
-					v-if="hasOpenedLootChest"
-					type="button"
-					class="loot-reward-card section-text-outline"
-					@click="handleLootClaim"
-				>
-					<p class="loot-reward-label">Loot Acquired</p>
-					<p class="loot-reward-name">{{ revealedLootLabel }}</p>
-				</button>
-			</transition>
+	<div
+		class="section-text-outline fixed left-6 top-6 z-30 flex items-center gap-2 rounded-xl border border-amber-300/40 bg-black/55 px-4 py-2 text-sm font-bold uppercase tracking-[0.08em] text-amber-100 backdrop-blur"
+	>
+		<Icon icon="mdi:cash-multiple" />
+		<span>Gold {{ playerGold }}</span>
+	</div>
 
+	<div v-if="showChest" class="loot-overlay">
+		<div class="loot-stage">
 			<button
 				type="button"
 				class="loot-chest-button"
-				@click="handleLootChestClick"
+				@click="handleChestClick"
 			>
 				<img
 					src="/images/chests/skull-chest.png"
-					alt="Treasure chest"
+					alt="Reward chest"
 					class="loot-chest-image"
 					width="240"
 				>
 			</button>
-
 			<p class="loot-chest-hint section-text-outline">
-				{{
-					hasOpenedLootChest
-						? "Click the loot to continue."
-						: "Click the chest to open your loot."
-				}}
+				Click the chest to open your loot
 			</p>
 		</div>
 	</div>
+
+	<BaseModal
+		v-model="showLootPopup"
+		title="Loot Acquired"
+		:close-on-backdrop="false"
+		:show-close-button="false"
+	>
+		<div class="loot-popup-content">
+			<p class="loot-popup-subtitle section-text-outline">
+				{{ currentMonster?.name ?? "Monster" }} dropped:
+			</p>
+			<ul class="loot-popup-list">
+				<li
+					v-for="lootItem in lootItems"
+					:key="lootItem.label"
+					class="loot-popup-item"
+				>
+					<span class="loot-popup-item-label">{{ lootItem.label }}</span>
+					<span class="loot-popup-item-value">{{ lootItem.value }}</span>
+				</li>
+			</ul>
+			<UButton
+				class="loot-popup-button w-full"
+				color="warning"
+				size="lg"
+				@click="handleLootClaim"
+			>
+				Claim Loot
+			</UButton>
+		</div>
+	</BaseModal>
 
 	<div class="fixed right-6 top-6 z-30">
 		<UButton
 			color="neutral"
 			variant="soft"
-			:disabled="isLoading || isAwaitingMonsterAttack || isSpectator"
+			:disabled="isLoading || isAwaitingMonsterAttack || isSpectator || isRewardSequenceActive"
 			@click="pickRandomMonster"
 		>
 			New Monster
@@ -769,8 +813,6 @@ onBeforeUnmount(() => {
 	background: transparent;
 	padding: 0;
 	cursor: pointer;
-	filter: drop-shadow(0 20px 35px rgba(0, 0, 0, 0.52));
-	animation: loot-chest-bob 2.2s ease-in-out infinite;
 }
 
 .loot-chest-image {
@@ -778,6 +820,8 @@ onBeforeUnmount(() => {
 	width: 240px;
 	max-width: 240px;
 	height: auto;
+	filter: drop-shadow(0 20px 35px rgba(0, 0, 0, 0.52));
+	animation: loot-chest-bob 2.2s ease-in-out infinite;
 }
 
 .loot-chest-hint {
@@ -789,63 +833,49 @@ onBeforeUnmount(() => {
 	text-transform: uppercase;
 }
 
-.loot-reward-card {
-	position: absolute;
-	left: 50%;
-	top: 0;
-	width: min(24rem, calc(100vw - 3rem));
+.loot-popup-content {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.loot-popup-subtitle {
+	font-size: 0.9rem;
+	color: rgba(255, 247, 237, 0.82);
+}
+
+.loot-popup-list {
+	display: grid;
+	gap: 0.75rem;
+}
+
+.loot-popup-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
 	padding: 0.9rem 1rem;
-	border: 1px solid rgba(251, 191, 36, 0.5);
-	cursor: pointer;
-	border-radius: 1rem;
-	background-color: transparent;
-	background:
-		linear-gradient(160deg, rgba(120, 53, 15, 0.92), rgba(69, 26, 3, 0.96)),
-		rgba(17, 24, 39, 0.92);
-	box-shadow:
-		0 0 36px rgba(251, 191, 36, 0.24),
-		0 18px 36px rgba(0, 0, 0, 0.4);
-	transform: translate(-50%, -1rem);
-	text-align: center;
-	color: inherit;
-	transition:
-		transform 0.18s ease,
-		box-shadow 0.18s ease;
+	border: 1px solid rgba(251, 191, 36, 0.22);
+	border-radius: 0.9rem;
+	background: rgba(255, 255, 255, 0.04);
 }
 
-.loot-reward-card:hover {
-	transform: translate(-50%, -1.35rem) scale(1.02);
-	box-shadow:
-		0 0 44px rgba(251, 191, 36, 0.3),
-		0 22px 40px rgba(0, 0, 0, 0.44);
-}
-
-.loot-reward-label {
-	font-size: 0.72rem;
-	font-weight: 900;
-	letter-spacing: 0.16em;
+.loot-popup-item-label {
+	font-size: 0.8rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
 	text-transform: uppercase;
-	color: rgba(253, 224, 71, 0.88);
+	color: rgba(253, 230, 138, 0.88);
 }
 
-.loot-reward-name {
+.loot-popup-item-value {
+	font-size: 1rem;
+	font-weight: 700;
+	color: #fff7ed;
+}
+
+.loot-popup-button {
 	margin-top: 0.35rem;
-	font-size: 1.1rem;
-	font-weight: 900;
-	color: #fff7d6;
-}
-
-.loot-pop-enter-active,
-.loot-pop-leave-active {
-	transition:
-		opacity 0.28s ease,
-		transform 0.28s ease;
-}
-
-.loot-pop-enter-from,
-.loot-pop-leave-to {
-	opacity: 0;
-	transform: translate(-50%, 2.8rem) scale(0.9);
 }
 
 @keyframes loot-chest-bob {
