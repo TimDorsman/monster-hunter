@@ -1,3 +1,4 @@
+import type { BattleAction } from "~/types/abilities";
 import type { BattleStateMessage, ConnectionStatus } from "~/types/battle";
 
 type UseBattleSocketOptions = {
@@ -53,7 +54,7 @@ export function useBattleSocket(options: UseBattleSocketOptions) {
 		ws.send(JSON.stringify(payload));
 	}
 
-	function sendAction(action: "attack" | "auraBeam" | "heal") {
+	function sendAction(action: BattleAction) {
 		sendMessage({
 			type: "action",
 			action,

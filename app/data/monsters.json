@@ -2,14 +2,18 @@
 	{
 		"id": 1,
 		"name": "Abyssal Leviadrake",
-		"health": 360,
+		"health": 220,
 		"experience": 56,
 		"weaknesses": ["electric", "ice", "fairy"],
 		"strenghts": ["water", "dragon", "dark"],
 		"abilities": [
 			{
+				"name": "attack",
+				"chance": 76
+			},
+			{
 				"name": "heal",
-				"chance": 7
+				"chance": 48
 			}
 		],
 		"reward": "Leviadrake Scaleplate"
@@ -21,6 +25,12 @@
 		"experience": 51,
 		"weaknesses": ["water", "ground", "rock"],
 		"strenghts": ["fire", "steel", "bug"],
+		"abilities": [
+			{
+				"name": "attack",
+				"chance": 84
+			}
+		],
 		"reward": "Molten Core Fang"
 	},
 	{
@@ -32,8 +42,12 @@
 		"strenghts": ["grass", "ground", "water"],
 		"abilities": [
 			{
+				"name": "attack",
+				"chance": 82
+			},
+			{
 				"name": "heal",
-				"chance": 9
+				"chance": 52
 			}
 		],
 		"reward": "Farrow BleedNice"
@@ -45,6 +59,12 @@
 		"experience": 49,
 		"weaknesses": ["electric", "ice", "rock"],
 		"strenghts": ["flying", "fighting", "grass"],
+		"abilities": [
+			{
+				"name": "attack",
+				"chance": 86
+			}
+		],
 		"reward": "Tempest Talon"
 	},
 	{
@@ -56,8 +76,12 @@
 		"strenghts": ["poison", "ghost", "dark"],
 		"abilities": [
 			{
+				"name": "attack",
+				"chance": 88
+			},
+			{
 				"name": "heal",
-				"chance": 5
+				"chance": 42
 			}
 		],
 		"reward": "Basilisk Venom Gland"
@@ -69,6 +93,12 @@
 		"experience": 60,
 		"weaknesses": ["fire", "fighting", "steel"],
 		"strenghts": ["ice", "rock", "normal"],
+		"abilities": [
+			{
+				"name": "attack",
+				"chance": 74
+			}
+		],
 		"reward": "Colossus Frost Core"
 	}
 ]

@@ -52,6 +52,7 @@ export type BattleStateMessage = {
 		monsterAttackCount: number;
 		monsterDamagedCount: number;
 		monsterHealedCount: number;
+		monsterBurnRounds: number;
 		turnHunterId: string | null;
 		maxHunters: number;
 		hunters: BattleHunterState[];

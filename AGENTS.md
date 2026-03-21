@@ -362,6 +362,136 @@ When generating or modifying code, agents must:
 5. Avoid introducing unnecessary dependencies.
 6. Prefer composability over inheritance.
 7. Keep files cohesive and single-responsibility.
+8. Respect file naming conventions as well as for variables.
+
+# 12. Naming Conventions
+
+This project follows consistent casing conventions depending on context.
+
+## PascalCase
+
+**Format**
+
+```text
+UserProfile
+BlogPostCard
+AuthLoginForm
+```
+
+**Used for**
+
+- Vue components
+- TypeScript types
+- TypeScript interfaces
+- Classes
+
+**Examples**
+
+```text
+components/UserProfile.vue
+components/blog/BlogPostCard.vue
+```
+
+```ts
+interface UserProfileData {}
+type ApiResponse = {};
+```
+
+## camelCase
+
+**Format**
+
+```text
+userProfile
+getUserData
+isAuthenticated
+```
+
+**Used for**
+
+- Variables
+- Functions
+- Composables
+- Reactive refs
+- Computed values
+
+**Examples**
+
+```ts
+const userProfile = ref(null)
+
+function fetchUserData() {}
+
+const isLoggedIn = computed(() => ...)
+```
+
+## kebab-case
+
+**Format**
+
+```text
+user-profile
+blog-post-card
+auth-login-form
+```
+
+**Used for**
+
+- File names
+- Component tags in templates
+- Routes
+- CSS classes
+
+**Examples**
+
+```text
+components/user-profile.vue
+components/blog/blog-post-card.vue
+pages/blog/my-first-post.vue
+```
+
+```vue
+<blog-post-card />
+```
+
+```css
+.user-profile-card {
+}
+```
+
+## snake_case
+
+**Format**
+
+```text
+user_profile
+created_at
+api_response
+```
+
+**Used for**
+
+- API responses
+- Database fields
+- External backend data structures
+
+**Examples**
+
+```text
+user_id
+created_at
+updated_at
+```
+
+## Quick Reference
+
+| Context               | Case       |
+| --------------------- | ---------- |
+| Components            | PascalCase |
+| Variables / Functions | camelCase  |
+| Files / Routes        | kebab-case |
+| CSS Classes           | kebab-case |
+| API / Database fields | snake_case |
 
 If a request conflicts with this document, this document takes precedence unless explicitly overridden.
 

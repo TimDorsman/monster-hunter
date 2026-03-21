@@ -29,6 +29,7 @@ export function useBattle() {
 	const monsterAttackCount = ref(0);
 	const monsterDamagedCount = ref(0);
 	const monsterHealedCount = ref(0);
+	const monsterBurnRounds = ref(0);
 
 	const selfHunter = computed(() =>
 		hunters.value.find((hunter) => hunter.id === playerId) ?? null,
@@ -75,6 +76,7 @@ export function useBattle() {
 		);
 	});
 	const monsterDefeated = computed(() => monsterHealth.value <= 0);
+	const monsterBurned = computed(() => monsterBurnRounds.value > 0);
 	const playerDefeated = computed(() => playerHealth.value <= 0);
 	const recentAttackLogs = computed(() => attackLogs.value.slice(-8));
 	const isMyTurn = computed(() => {
@@ -108,6 +110,7 @@ export function useBattle() {
 		monsterAttackCount.value = nextState.monsterAttackCount;
 		monsterDamagedCount.value = nextState.monsterDamagedCount;
 		monsterHealedCount.value = nextState.monsterHealedCount;
+		monsterBurnRounds.value = nextState.monsterBurnRounds;
 
 		const self = nextState.hunters.find((hunter) => hunter.id === playerId);
 		if (self) {
@@ -147,6 +150,10 @@ export function useBattle() {
 		socket.sendAction("heal");
 	}
 
+	function castBurn() {
+		socket.sendAction("burn");
+	}
+
 	function pickRandomMonster() {
 		socket.sendNewMonster();
 	}
@@ -182,6 +189,8 @@ export function useBattle() {
 		monsterAttackCount,
 		monsterDamagedCount,
 		monsterHealedCount,
+		monsterBurnRounds,
+		monsterBurned,
 		isSpectator,
 		activeHunters,
 		spectatorHunters,
@@ -192,6 +201,7 @@ export function useBattle() {
 		pickRandomMonster,
 		attackMonster,
 		castAuraBeam,
+		castBurn,
 		healHunter,
 	};
 }

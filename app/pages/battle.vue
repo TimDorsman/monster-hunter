@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
+import { HUNTER_ABILITY_SUCCESS_CHANCES } from "../../utils/battle-abilities";
 
 const {
 	PLAYER_MAX_HEALTH,
@@ -31,10 +32,12 @@ const {
 	hunterDamagedCount,
 	monsterAttackCount,
 	monsterDamagedCount,
+	monsterBurned,
 	initializeBattle,
 	pickRandomMonster,
 	attackMonster,
 	castAuraBeam,
+	castBurn,
 	healHunter,
 } = useBattle();
 
@@ -49,6 +52,8 @@ let hunterShakeTimer: ReturnType<typeof setTimeout> | null = null;
 let monsterShakeTimer: ReturnType<typeof setTimeout> | null = null;
 let hunterHitTimer: ReturnType<typeof setTimeout> | null = null;
 let monsterHitTimer: ReturnType<typeof setTimeout> | null = null;
+const hunterAbilitySuccessChances = HUNTER_ABILITY_SUCCESS_CHANCES;
+const hasOpenedLootChest = ref(false);
 
 const monsterImageSrc = computed(() => {
 	if (!currentMonster.value) {
@@ -151,6 +156,32 @@ const turnHintLabel = computed(() => {
 	}
 	return "Waiting for battle state...";
 });
+const currentEncounterKey = computed(() => {
+	if (!currentMonster.value) {
+		return "";
+	}
+
+	return `${currentMonster.value.id}-${currentMonster.value.level}-${currentMonster.value.health}`;
+});
+const showLootChest = computed(
+	() => Boolean(currentMonster.value) && battleEnded.value && monsterDefeated.value,
+);
+const revealedLootLabel = computed(() => {
+	if (!currentMonster.value) {
+		return "";
+	}
+
+	return currentMonster.value.reward;
+});
+
+function handleLootChestClick() {
+	hasOpenedLootChest.value = true;
+}
+
+function handleLootClaim() {
+	hasOpenedLootChest.value = false;
+	pickRandomMonster();
+}
 
 function getRequiredExperienceForLevel(level: number) {
 	return Math.round(60 + level * 40 + level * level * 12);
@@ -244,6 +275,10 @@ watch(monsterDamagedCount, () => {
 	}, 220);
 });
 
+watch(currentEncounterKey, () => {
+	hasOpenedLootChest.value = false;
+});
+
 onMounted(() => {
 	initializeBattle();
 });
@@ -280,6 +315,43 @@ onBeforeUnmount(() => {
 		class="level-up-overlay"
 	>
 		<p class="level-up-text text-center">LEVEL UP!</p>
+	</div>
+
+	<div v-if="showLootChest" class="loot-overlay">
+		<div class="loot-stage">
+			<transition name="loot-pop">
+				<button
+					v-if="hasOpenedLootChest"
+					type="button"
+					class="loot-reward-card section-text-outline"
+					@click="handleLootClaim"
+				>
+					<p class="loot-reward-label">Loot Acquired</p>
+					<p class="loot-reward-name">{{ revealedLootLabel }}</p>
+				</button>
+			</transition>
+
+			<button
+				type="button"
+				class="loot-chest-button"
+				@click="handleLootChestClick"
+			>
+				<img
+					src="/images/chests/skull-chest.png"
+					alt="Treasure chest"
+					class="loot-chest-image"
+					width="240"
+				>
+			</button>
+
+			<p class="loot-chest-hint section-text-outline">
+				{{
+					hasOpenedLootChest
+						? "Click the loot to continue."
+						: "Click the chest to open your loot."
+				}}
+			</p>
+		</div>
 	</div>
 
 	<div class="fixed right-6 top-6 z-30">
@@ -490,6 +562,12 @@ onBeforeUnmount(() => {
 					>
 						Monster Turn
 					</p>
+					<p
+						v-if="monsterBurned && !monsterDefeated"
+						class="status-badge status-badge-burn section-text-outline"
+					>
+						BURN
+					</p>
 					<NuxtImg
 						:src="monsterImageSrc"
 						:alt="`${currentMonster.name} portrait`"
@@ -521,6 +599,7 @@ onBeforeUnmount(() => {
 					<Icon class="ability-icon" icon="mdi:sword-cross" />
 					Attack
 				</span>
+				<span class="ability-chance">{{ hunterAbilitySuccessChances.attack }}%</span>
 			</UButton>
 
 			<UButton
@@ -534,6 +613,7 @@ onBeforeUnmount(() => {
 					<Icon class="ability-icon ability-icon-spin" icon="mdi:star-four-points-circle" />
 					Aura Beam
 				</span>
+				<span class="ability-chance">{{ hunterAbilitySuccessChances.auraBeam }}%</span>
 			</UButton>
 
 			<UButton
@@ -547,8 +627,22 @@ onBeforeUnmount(() => {
 					<Icon class="ability-icon" icon="mdi:heart-plus" />
 					Heal
 				</span>
+				<span class="ability-chance">{{ hunterAbilitySuccessChances.heal }}%</span>
 			</UButton>
 
+			<UButton
+				class="ability-button ability-button-burn"
+				color="error"
+				size="xl"
+				:disabled="isActionDisabled"
+				@click="castBurn"
+			>
+				<span class="ability-label">
+					<Icon class="ability-icon" icon="mdi:fire" />
+					Burn
+				</span>
+				<span class="ability-chance">{{ hunterAbilitySuccessChances.burn }}%</span>
+			</UButton>
 			<UButton
 				class="ability-button ability-button-empty"
 				size="xl"
@@ -644,6 +738,124 @@ onBeforeUnmount(() => {
 		0 0 42px rgba(255, 255, 255, 0.35);
 	transform: translate(calc(-50% - 120vw), -50%);
 	animation: level-up-slide 2.7s cubic-bezier(0.2, 0.8, 0.24, 1) forwards;
+}
+
+.loot-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 75;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background:
+		radial-gradient(circle at 50% 45%, rgba(250, 204, 21, 0.16), transparent 30%),
+		rgba(0, 0, 0, 0.42);
+	backdrop-filter: blur(6px);
+}
+
+.loot-stage {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-height: 23rem;
+	padding: 1.5rem;
+}
+
+.loot-chest-button {
+	position: relative;
+	border: 0;
+	background: transparent;
+	padding: 0;
+	cursor: pointer;
+	filter: drop-shadow(0 20px 35px rgba(0, 0, 0, 0.52));
+	animation: loot-chest-bob 2.2s ease-in-out infinite;
+}
+
+.loot-chest-image {
+	display: block;
+	width: 240px;
+	max-width: 240px;
+	height: auto;
+}
+
+.loot-chest-hint {
+	margin-top: 1rem;
+	font-size: 0.82rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	color: rgba(254, 240, 138, 0.96);
+	text-transform: uppercase;
+}
+
+.loot-reward-card {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: min(24rem, calc(100vw - 3rem));
+	padding: 0.9rem 1rem;
+	border: 1px solid rgba(251, 191, 36, 0.5);
+	cursor: pointer;
+	border-radius: 1rem;
+	background-color: transparent;
+	background:
+		linear-gradient(160deg, rgba(120, 53, 15, 0.92), rgba(69, 26, 3, 0.96)),
+		rgba(17, 24, 39, 0.92);
+	box-shadow:
+		0 0 36px rgba(251, 191, 36, 0.24),
+		0 18px 36px rgba(0, 0, 0, 0.4);
+	transform: translate(-50%, -1rem);
+	text-align: center;
+	color: inherit;
+	transition:
+		transform 0.18s ease,
+		box-shadow 0.18s ease;
+}
+
+.loot-reward-card:hover {
+	transform: translate(-50%, -1.35rem) scale(1.02);
+	box-shadow:
+		0 0 44px rgba(251, 191, 36, 0.3),
+		0 22px 40px rgba(0, 0, 0, 0.44);
+}
+
+.loot-reward-label {
+	font-size: 0.72rem;
+	font-weight: 900;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: rgba(253, 224, 71, 0.88);
+}
+
+.loot-reward-name {
+	margin-top: 0.35rem;
+	font-size: 1.1rem;
+	font-weight: 900;
+	color: #fff7d6;
+}
+
+.loot-pop-enter-active,
+.loot-pop-leave-active {
+	transition:
+		opacity 0.28s ease,
+		transform 0.28s ease;
+}
+
+.loot-pop-enter-from,
+.loot-pop-leave-to {
+	opacity: 0;
+	transform: translate(-50%, 2.8rem) scale(0.9);
+}
+
+@keyframes loot-chest-bob {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-10px);
+	}
 }
 
 @keyframes level-up-slide {
@@ -842,6 +1054,15 @@ onBeforeUnmount(() => {
 	animation: ability-pulse-green 1.55s ease-in-out infinite;
 }
 
+:deep(.ability-button-burn) {
+	background: linear-gradient(
+		140deg,
+		rgba(239, 68, 68, 0.92),
+		rgba(194, 65, 12, 0.94)
+	);
+	animation: ability-pulse-burn 1.5s ease-in-out infinite;
+}
+
 :deep(.ability-button-empty) {
 	border-style: dashed;
 	border-color: rgba(255, 255, 255, 0.2);
@@ -910,6 +1131,20 @@ onBeforeUnmount(() => {
 	}
 }
 
+@keyframes ability-pulse-burn {
+	0%,
+	100% {
+		box-shadow:
+			0 0 14px rgba(248, 113, 113, 0.28),
+			0 12px 20px rgba(120, 53, 15, 0.38);
+	}
+	50% {
+		box-shadow:
+			0 0 30px rgba(251, 146, 60, 0.48),
+			0 16px 28px rgba(120, 53, 15, 0.54);
+	}
+}
+
 .battle-log-item {
 	display: grid;
 	grid-template-columns: 4.8rem 1fr;
@@ -971,6 +1206,15 @@ onBeforeUnmount(() => {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.45rem;
+}
+
+.ability-chance {
+	display: block;
+	margin-top: 0.2rem;
+	font-size: 0.72rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	opacity: 0.8;
 }
 
 .ability-icon {
@@ -1081,6 +1325,30 @@ onBeforeUnmount(() => {
 	background: rgba(244, 63, 94, 0.24);
 	border-color: rgba(251, 113, 133, 0.6);
 	color: rgba(254, 205, 211, 1);
+}
+
+.status-badge {
+	position: absolute;
+	right: 0.75rem;
+	top: 0.75rem;
+	z-index: 2;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.1rem 0.55rem;
+	border-radius: 9999px;
+	border: 1px solid transparent;
+	font-size: 0.68rem;
+	font-weight: 900;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+}
+
+.status-badge-burn {
+	background: rgba(127, 29, 29, 0.88);
+	border-color: rgba(248, 113, 113, 0.7);
+	color: #fecaca;
+	box-shadow: 0 0 18px rgba(239, 68, 68, 0.35);
 }
 
 @keyframes turn-banner-player-pulse {
