@@ -1,0 +1,146 @@
+[
+	{
+		"id": "brinebone-shard",
+		"name": "Brinebone Shard",
+		"rarity": "common",
+		"category": "material",
+		"baseSellValue": 12,
+		"craftingTags": ["bone", "water", "scale"]
+	},
+	{
+		"id": "deepsea-frill",
+		"name": "Deepsea Frill",
+		"rarity": "uncommon",
+		"category": "material",
+		"baseSellValue": 20,
+		"craftingTags": ["water", "fin", "hide"]
+	},
+	{
+		"id": "leviadrake-scaleplate",
+		"name": "Leviadrake Scaleplate",
+		"rarity": "epic",
+		"category": "trophy",
+		"baseSellValue": 56,
+		"craftingTags": ["dragon", "plate", "water"]
+	},
+	{
+		"id": "ember-rib",
+		"name": "Ember Rib",
+		"rarity": "common",
+		"category": "material",
+		"baseSellValue": 14,
+		"craftingTags": ["fire", "bone", "beast"]
+	},
+	{
+		"id": "magma-pearl",
+		"name": "Magma Pearl",
+		"rarity": "uncommon",
+		"category": "material",
+		"baseSellValue": 22,
+		"craftingTags": ["fire", "core", "ore"]
+	},
+	{
+		"id": "molten-core-fang",
+		"name": "Molten Core Fang",
+		"rarity": "legendary",
+		"category": "core",
+		"baseSellValue": 74,
+		"craftingTags": ["fire", "fang", "core"]
+	},
+	{
+		"id": "thorn-hook",
+		"name": "Thorn Hook",
+		"rarity": "common",
+		"category": "material",
+		"baseSellValue": 11,
+		"craftingTags": ["plant", "thorn", "fiber"]
+	},
+	{
+		"id": "bloodroot-fiber",
+		"name": "Bloodroot Fiber",
+		"rarity": "uncommon",
+		"category": "material",
+		"baseSellValue": 19,
+		"craftingTags": ["plant", "fiber", "poison"]
+	},
+	{
+		"id": "farrow-bleednice",
+		"name": "Farrow BleedNice",
+		"rarity": "rare",
+		"category": "trophy",
+		"baseSellValue": 38,
+		"craftingTags": ["plant", "thorn", "blood"]
+	},
+	{
+		"id": "storm-feather",
+		"name": "Storm Feather",
+		"rarity": "common",
+		"category": "material",
+		"baseSellValue": 13,
+		"craftingTags": ["wind", "feather", "beast"]
+	},
+	{
+		"id": "thunder-quill",
+		"name": "Thunder Quill",
+		"rarity": "uncommon",
+		"category": "material",
+		"baseSellValue": 21,
+		"craftingTags": ["electric", "feather", "wind"]
+	},
+	{
+		"id": "tempest-talon",
+		"name": "Tempest Talon",
+		"rarity": "rare",
+		"category": "trophy",
+		"baseSellValue": 40,
+		"craftingTags": ["wind", "claw", "electric"]
+	},
+	{
+		"id": "venom-scale",
+		"name": "Venom Scale",
+		"rarity": "common",
+		"category": "material",
+		"baseSellValue": 12,
+		"craftingTags": ["poison", "scale", "hide"]
+	},
+	{
+		"id": "nightshade-eye",
+		"name": "Nightshade Eye",
+		"rarity": "rare",
+		"category": "material",
+		"baseSellValue": 34,
+		"craftingTags": ["poison", "dark", "eye"]
+	},
+	{
+		"id": "basilisk-venom-gland",
+		"name": "Basilisk Venom Gland",
+		"rarity": "epic",
+		"category": "core",
+		"baseSellValue": 58,
+		"craftingTags": ["poison", "core", "beast"]
+	},
+	{
+		"id": "frost-ore-chip",
+		"name": "Frost Ore Chip",
+		"rarity": "common",
+		"category": "material",
+		"baseSellValue": 15,
+		"craftingTags": ["ice", "ore", "rock"]
+	},
+	{
+		"id": "glacier-heart",
+		"name": "Glacier Heart",
+		"rarity": "legendary",
+		"category": "core",
+		"baseSellValue": 82,
+		"craftingTags": ["ice", "core", "giant"]
+	},
+	{
+		"id": "colossus-frost-core",
+		"name": "Colossus Frost Core",
+		"rarity": "mythic",
+		"category": "core",
+		"baseSellValue": 120,
+		"craftingTags": ["ice", "core", "ancient"]
+	}
+]

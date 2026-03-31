@@ -4,6 +4,7 @@ import { AuraBeamAbility } from "../abilities/aura-beam-ability";
 import { BurnAbility } from "../abilities/burn-ability";
 import { HealAbility } from "../abilities/heal-ability";
 import { MonsterHealAbility } from "../abilities/monster-heal-ability";
+import { resolveBattleReward } from "./loot";
 import { getRandomIntInclusive } from "./random";
 import {
 	type BattleRoom,
@@ -97,6 +98,7 @@ function applyBurnDamage(room: BattleRoom) {
 		room,
 		monster: room.currentMonster,
 		addBattleLogEntry,
+		resolveBattleReward,
 		awardExperienceToHunters,
 		randomIntInclusive: getRandomIntInclusive,
 	});
@@ -270,6 +272,7 @@ export function handlePlayerAction(
 			hunter,
 			monster: room.currentMonster,
 			addBattleLogEntry,
+			resolveBattleReward,
 			setNextTurnOrMonster,
 			awardExperienceToHunters,
 			successChance: room.settings.hunter.abilityChances.healChance,
@@ -285,6 +288,7 @@ export function handlePlayerAction(
 			hunter,
 			monster: room.currentMonster,
 			addBattleLogEntry,
+			resolveBattleReward,
 			setNextTurnOrMonster,
 			awardExperienceToHunters,
 			successChance: room.settings.hunter.abilityChances.burnChance,
@@ -299,6 +303,7 @@ export function handlePlayerAction(
 			hunter,
 			monster: room.currentMonster,
 			addBattleLogEntry,
+			resolveBattleReward,
 			setNextTurnOrMonster,
 			awardExperienceToHunters,
 			successChance: room.settings.hunter.abilityChances.auraBeamChance,
@@ -314,6 +319,7 @@ export function handlePlayerAction(
 		hunter,
 		monster: room.currentMonster,
 		addBattleLogEntry,
+		resolveBattleReward,
 		setNextTurnOrMonster,
 		awardExperienceToHunters,
 		successChance: room.settings.hunter.abilityChances.attackChance,

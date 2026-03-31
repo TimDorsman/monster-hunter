@@ -48,6 +48,7 @@ export function buildStatePayload(room: BattleRoom): BattleStatePayload {
 			turnHunterId: room.turnHunterId,
 			maxHunters: MAX_HUNTERS,
 			settings: room.settings,
+			resolvedReward: room.resolvedReward,
 			hunters: Array.from(room.hunters.values()).sort(
 				(a, b) => a.joinedAt - b.joinedAt,
 			),

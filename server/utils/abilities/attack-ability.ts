@@ -5,6 +5,7 @@ import type {
 	AbilityRoomState,
 	AttackAbilityContext,
 } from "~~/types/abilities";
+import { formatBattleRewardSummary } from "~~/utils/loot";
 
 export class AttackAbility {
 	readonly action = "attack" as const;
@@ -42,9 +43,13 @@ export class AttackAbility {
 		context.room.monsterDamagedCount += 1;
 
 		if (context.room.monsterHealth === 0) {
+			const reward = context.resolveBattleReward(
+				context.room,
+				context.monster,
+			);
 			context.addBattleLogEntry(
 				context.room,
-				`${context.hunter.name} defeated Lv. ${context.monster.level} ${context.monster.name} and earned ${context.monster.reward}.`,
+				`${context.hunter.name} defeated Lv. ${context.monster.level} ${context.monster.name} and earned ${formatBattleRewardSummary(reward)}.`,
 				"hunter",
 			);
 			context.awardExperienceToHunters(

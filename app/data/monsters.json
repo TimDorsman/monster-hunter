@@ -16,7 +16,26 @@
 				"chance": 48
 			}
 		],
-		"reward": "Leviadrake Scaleplate"
+		"lootTable": [
+			{
+				"itemId": "brinebone-shard",
+				"chance": 100,
+				"minQuantity": 1,
+				"maxQuantity": 2
+			},
+			{
+				"itemId": "deepsea-frill",
+				"chance": 68,
+				"minQuantity": 1,
+				"maxQuantity": 1
+			},
+			{
+				"itemId": "leviadrake-scaleplate",
+				"chance": 24,
+				"minQuantity": 1,
+				"maxQuantity": 1
+			}
+		]
 	},
 	{
 		"id": 2,
@@ -31,7 +50,26 @@
 				"chance": 84
 			}
 		],
-		"reward": "Molten Core Fang"
+		"lootTable": [
+			{
+				"itemId": "ember-rib",
+				"chance": 100,
+				"minQuantity": 1,
+				"maxQuantity": 3
+			},
+			{
+				"itemId": "magma-pearl",
+				"chance": 60,
+				"minQuantity": 1,
+				"maxQuantity": 2
+			},
+			{
+				"itemId": "molten-core-fang",
+				"chance": 18,
+				"minQuantity": 1,
+				"maxQuantity": 1
+			}
+		]
 	},
 	{
 		"id": 3,
@@ -50,7 +88,26 @@
 				"chance": 52
 			}
 		],
-		"reward": "Farrow BleedNice"
+		"lootTable": [
+			{
+				"itemId": "thorn-hook",
+				"chance": 100,
+				"minQuantity": 2,
+				"maxQuantity": 4
+			},
+			{
+				"itemId": "bloodroot-fiber",
+				"chance": 58,
+				"minQuantity": 1,
+				"maxQuantity": 2
+			},
+			{
+				"itemId": "farrow-bleednice",
+				"chance": 30,
+				"minQuantity": 1,
+				"maxQuantity": 1
+			}
+		]
 	},
 	{
 		"id": 4,
@@ -65,7 +122,26 @@
 				"chance": 86
 			}
 		],
-		"reward": "Tempest Talon"
+		"lootTable": [
+			{
+				"itemId": "storm-feather",
+				"chance": 100,
+				"minQuantity": 1,
+				"maxQuantity": 3
+			},
+			{
+				"itemId": "thunder-quill",
+				"chance": 56,
+				"minQuantity": 1,
+				"maxQuantity": 2
+			},
+			{
+				"itemId": "tempest-talon",
+				"chance": 26,
+				"minQuantity": 1,
+				"maxQuantity": 1
+			}
+		]
 	},
 	{
 		"id": 5,
@@ -84,7 +160,26 @@
 				"chance": 42
 			}
 		],
-		"reward": "Basilisk Venom Gland"
+		"lootTable": [
+			{
+				"itemId": "venom-scale",
+				"chance": 100,
+				"minQuantity": 2,
+				"maxQuantity": 3
+			},
+			{
+				"itemId": "nightshade-eye",
+				"chance": 42,
+				"minQuantity": 1,
+				"maxQuantity": 1
+			},
+			{
+				"itemId": "basilisk-venom-gland",
+				"chance": 20,
+				"minQuantity": 1,
+				"maxQuantity": 1
+			}
+		]
 	},
 	{
 		"id": 6,
@@ -99,6 +194,25 @@
 				"chance": 74
 			}
 		],
-		"reward": "Colossus Frost Core"
+		"lootTable": [
+			{
+				"itemId": "frost-ore-chip",
+				"chance": 100,
+				"minQuantity": 2,
+				"maxQuantity": 4
+			},
+			{
+				"itemId": "glacier-heart",
+				"chance": 28,
+				"minQuantity": 1,
+				"maxQuantity": 1
+			},
+			{
+				"itemId": "colossus-frost-core",
+				"chance": 10,
+				"minQuantity": 1,
+				"maxQuantity": 1
+			}
+		]
 	}
 ]

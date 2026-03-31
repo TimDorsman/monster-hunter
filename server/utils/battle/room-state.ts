@@ -20,6 +20,8 @@ function createBattleRoom(): BattleRoom {
 		turnHunterId: null,
 		monsterTurnTimer: null,
 		settings: createInitialBattleGameSettings(),
+		resolvedReward: null,
+		rewardSequence: 0,
 	};
 }
 

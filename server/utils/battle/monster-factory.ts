@@ -158,6 +158,7 @@ export function pickNewMonster(room: BattleRoom) {
 	room.battleEnded = false;
 	room.isAwaitingMonsterAttack = false;
 	room.monsterBurnRounds = 0;
+	room.resolvedReward = null;
 
 	for (const hunter of getActiveHunters(room)) {
 		hunter.health = hunter.maxHealth;
