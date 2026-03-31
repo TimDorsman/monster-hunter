@@ -5,11 +5,13 @@ import {
 	sanitizeBattleGameSettings,
 } from "~~/utils/game-settings";
 import { getMonsterAbilityChance } from "~~/utils/battle-abilities";
+import { useBattleAudio } from "~/composables/battle/useBattleAudio";
 import { calculateRequiredExperience, useBattleProgress } from "~/composables/battle/useBattleProgress";
 import { useBattleSettingsStorage } from "~/composables/battle/useBattleSettingsStorage";
 import { useBattleSocket } from "~/composables/battle/useBattleSocket";
 
 const PLAYER_NAME = "Swifty Mercury";
+const SETTINGS_SYNC_DELAY_MS = 90;
 
 export function useBattle() {
 	const isLoading = ref(true);
@@ -22,9 +24,15 @@ export function useBattle() {
 	const maxHunters = ref(4);
 	const hunters = ref<BattleHunterState[]>([]);
 	const isSpectator = ref(false);
+	const hasProcessedInitialBattleState = ref(false);
+	const latestProcessedLogId = ref(0);
 
 	const { getOrCreatePlayerId, loadPlayerProgress, persistPlayerProgress } = useBattleProgress();
 	const { loadGameSettings, persistGameSettings } = useBattleSettingsStorage();
+	const {
+		unlockAudio,
+		playBattleSound,
+	} = useBattleAudio();
 	const playerId = getOrCreatePlayerId();
 	const initialProgress = loadPlayerProgress();
 	const initialSettings = loadGameSettings();
@@ -40,6 +48,7 @@ export function useBattle() {
 	const monsterDamagedCount = ref(0);
 	const monsterHealedCount = ref(0);
 	const monsterBurnRounds = ref(0);
+	let settingsSyncTimer: ReturnType<typeof setTimeout> | null = null;
 
 	const selfHunter = computed(() =>
 		hunters.value.find((hunter) => hunter.id === playerId) ?? null,
@@ -134,8 +143,48 @@ export function useBattle() {
 		return "monster";
 	});
 
+	function playAudioForNewLogs(nextLogs: BattleLogEntry[]) {
+		const latestLogId = nextLogs[nextLogs.length - 1]?.id ?? 0;
+
+		if (!hasProcessedInitialBattleState.value) {
+			hasProcessedInitialBattleState.value = true;
+			latestProcessedLogId.value = latestLogId;
+			return;
+		}
+
+		if (latestLogId <= latestProcessedLogId.value) {
+			if (latestLogId < latestProcessedLogId.value) {
+				latestProcessedLogId.value = latestLogId;
+			}
+			return;
+		}
+
+		const newLogs = nextLogs.filter(
+			(logEntry) => logEntry.id > latestProcessedLogId.value,
+		);
+		for (const logEntry of newLogs) {
+			if (logEntry.metadata?.eventType !== "ability") {
+				continue;
+			}
+			if (
+				logEntry.metadata.action !== "attack" &&
+				logEntry.metadata.action !== "auraBeam"
+			) {
+				continue;
+			}
+			if (logEntry.source !== "hunter" && logEntry.source !== "monster") {
+				continue;
+			}
+
+			void playBattleSound(logEntry.source, logEntry.metadata.action);
+		}
+
+		latestProcessedLogId.value = latestLogId;
+	}
+
 	function applyStateMessage(message: BattleStateMessage) {
 		const nextState = message.state;
+		playAudioForNewLogs(nextState.logs);
 		currentMonster.value = nextState.monster;
 		monsterHealth.value = nextState.monsterHealth;
 		attackLogs.value = nextState.logs;
@@ -182,7 +231,15 @@ export function useBattle() {
 		const sanitizedSettings = sanitizeBattleGameSettings(nextSettings);
 		settings.value = sanitizedSettings;
 		persistGameSettings(sanitizedSettings);
-		socket.sendSettings(sanitizedSettings);
+
+		if (settingsSyncTimer) {
+			clearTimeout(settingsSyncTimer);
+		}
+
+		settingsSyncTimer = setTimeout(() => {
+			socket.sendSettings(sanitizedSettings);
+			settingsSyncTimer = null;
+		}, SETTINGS_SYNC_DELAY_MS);
 	}
 
 	function resetGameSettings() {
@@ -227,6 +284,12 @@ export function useBattle() {
 		socket.connect();
 	}
 
+	onBeforeUnmount(() => {
+		if (settingsSyncTimer) {
+			clearTimeout(settingsSyncTimer);
+		}
+	});
+
 	return {
 		isLoading,
 		connectionStatus: socket.connectionStatus,
@@ -264,6 +327,7 @@ export function useBattle() {
 		currentTurnHunterName,
 		maxHunters,
 		selfHunter,
+		unlockBattleAudio: unlockAudio,
 		initializeBattle,
 		updateGameSettings,
 		resetGameSettings,

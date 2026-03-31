@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
 import type { HunterAbilityChanceSettings, HunterGameSettings, MonsterGameSettings } from "~~/types/game-settings";
+import BattleGameSettingsPanel from "~~/components/BattleGameSettingsPanel.vue";
+import { useBattleAudio } from "~/composables/battle/useBattleAudio";
 import { useBattleSettingsStorage } from "~/composables/battle/useBattleSettingsStorage";
 
 const {
@@ -47,6 +49,11 @@ const {
 	castBurn,
 	healHunter,
 } = useBattle();
+const {
+	unlockAudio: unlockBattleAudio,
+	playChestOpenSound,
+	playLevelUpSound,
+} = useBattleAudio();
 const { loadPanelOpenState, persistPanelOpenState } = useBattleSettingsStorage();
 
 const showLevelUpOverlay = ref(false);
@@ -192,6 +199,8 @@ function resetRewardSequence() {
 }
 
 function handleChestClick() {
+	void unlockBattleAudio();
+	void playChestOpenSound();
 	showChest.value = false;
 	showLootPopup.value = true;
 }
@@ -201,6 +210,31 @@ function handleLootClaim() {
 	showLootPopup.value = false;
 	showChest.value = false;
 	pickRandomMonster();
+}
+
+function runBattleInteraction(action: () => void) {
+	void unlockBattleAudio();
+	action();
+}
+
+function handlePickRandomMonster() {
+	runBattleInteraction(pickRandomMonster);
+}
+
+function handleAttackMonster() {
+	runBattleInteraction(attackMonster);
+}
+
+function handleCastAuraBeam() {
+	runBattleInteraction(castAuraBeam);
+}
+
+function handleHealHunter() {
+	runBattleInteraction(healHunter);
+}
+
+function handleCastBurn() {
+	runBattleInteraction(castBurn);
 }
 
 function getRequiredExperienceForLevel(level: number) {
@@ -294,6 +328,7 @@ function getLogItemClass(source: "hunter" | "monster" | "system") {
 }
 
 watch(levelUpAnnouncementCount, () => {
+	void playLevelUpSound();
 	levelUpOverlayKey.value += 1;
 	showLevelUpOverlay.value = true;
 	if (levelUpOverlayTimer) {
@@ -482,7 +517,7 @@ onBeforeUnmount(() => {
 			color="neutral"
 			variant="soft"
 			:disabled="isLoading || isAwaitingMonsterAttack || isSpectator || isRewardSequenceActive"
-			@click="pickRandomMonster"
+			@click="handlePickRandomMonster"
 		>
 			New Monster
 		</UButton>
@@ -740,7 +775,7 @@ onBeforeUnmount(() => {
 				color="error"
 				size="xl"
 				:disabled="isActionDisabled"
-				@click="attackMonster"
+				@click="handleAttackMonster"
 			>
 				<span class="ability-label">
 					<Icon class="ability-icon" icon="mdi:sword-cross" />
@@ -754,7 +789,7 @@ onBeforeUnmount(() => {
 				color="primary"
 				size="xl"
 				:disabled="isActionDisabled"
-				@click="castAuraBeam"
+				@click="handleCastAuraBeam"
 			>
 				<span class="ability-label">
 					<Icon class="ability-icon ability-icon-spin" icon="mdi:star-four-points-circle" />
@@ -768,7 +803,7 @@ onBeforeUnmount(() => {
 				color="success"
 				size="xl"
 				:disabled="isActionDisabled || !canHeal"
-				@click="healHunter"
+				@click="handleHealHunter"
 			>
 				<span class="ability-label">
 					<Icon class="ability-icon" icon="mdi:heart-plus" />
@@ -782,7 +817,7 @@ onBeforeUnmount(() => {
 				color="error"
 				size="xl"
 				:disabled="isActionDisabled"
-				@click="castBurn"
+				@click="handleCastBurn"
 			>
 				<span class="ability-label">
 					<Icon class="ability-icon" icon="mdi:fire" />
@@ -888,6 +923,8 @@ onBeforeUnmount(() => {
 	top: 50%;
 	left: 50%;
 	margin: 0;
+	user-select: none;
+	-webkit-user-select: none;
 	font-size: clamp(6rem, 18vw, 24rem);
 	font-weight: 900;
 	line-height: 0.82;
