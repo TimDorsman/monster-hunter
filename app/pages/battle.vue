@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
-import type { HunterAbilityChanceSettings, HunterGameSettings, MonsterGameSettings } from "~~/types/game-settings";
+import type {
+	HunterAbilityChanceSettings,
+	HunterGameSettings,
+	MonsterGameSettings,
+} from "~~/types/game-settings";
+import type { LootRarity } from "~~/types/loot";
+import { formatLootAppearance, lootRarityLabels } from "~~/utils/loot";
 import BattleGameSettingsPanel from "~~/components/BattleGameSettingsPanel.vue";
 import { useBattleAudio } from "~/composables/battle/useBattleAudio";
 import { useBattleSettingsStorage } from "~/composables/battle/useBattleSettingsStorage";
@@ -8,15 +14,15 @@ import { useBattleSettingsStorage } from "~/composables/battle/useBattleSettings
 const {
 	isLoading,
 	currentMonster,
+	resolvedReward,
 	monsterHealth,
 	playerHealth,
 	playerMaxHealth,
 	recentAttackLogs,
-	playerLevel,
-	playerExperience,
 	playerGold,
+	playerInventoryDetails,
+	playerInventorySaleValue,
 	levelUpAnnouncementCount,
-	experienceRequiredForNextLevel,
 	monsterHealthPercent,
 	playerHealthPercent,
 	monsterDefeated,
@@ -39,11 +45,15 @@ const {
 	monsterBurned,
 	settings,
 	effectiveMonsterSettings,
+	rewardClaimStatus,
+	canClaimResolvedReward,
+	hasClaimedCurrentReward,
 	initializeBattle,
 	updateGameSettings,
 	resetGameSettings,
 	pickRandomMonster,
-	addPlayerGold,
+	claimResolvedBattleReward,
+	sellAllPlayerInventory,
 	attackMonster,
 	castAuraBeam,
 	castBurn,
@@ -54,14 +64,14 @@ const {
 	playChestOpenSound,
 	playLevelUpSound,
 } = useBattleAudio();
-const { loadPanelOpenState, persistPanelOpenState } = useBattleSettingsStorage();
+const { loadPanelOpenState, persistPanelOpenState } =
+	useBattleSettingsStorage();
 
 const showLevelUpOverlay = ref(false);
 const levelUpOverlayKey = ref(0);
 let levelUpOverlayTimer: ReturnType<typeof setTimeout> | null = null;
 const showChest = ref(false);
 const showLootPopup = ref(false);
-const hasInitializedRewardState = ref(false);
 const isHunterCardShaking = ref(false);
 const isMonsterCardShaking = ref(false);
 const isHunterCardHit = ref(false);
@@ -70,12 +80,6 @@ let hunterShakeTimer: ReturnType<typeof setTimeout> | null = null;
 let monsterShakeTimer: ReturnType<typeof setTimeout> | null = null;
 let hunterHitTimer: ReturnType<typeof setTimeout> | null = null;
 let monsterHitTimer: ReturnType<typeof setTimeout> | null = null;
-const goldRewardAmount = 320;
-const lootItems = [
-	{ label: "Gold", value: `${goldRewardAmount}` },
-	{ label: "Hunter Potion", value: "2x Mega Potion" },
-	{ label: "Rare Material", value: "1x Wyvern Fang" },
-];
 
 const monsterImageSrc = computed(() => {
 	if (!currentMonster.value) {
@@ -98,100 +102,153 @@ const battleLogTitle = computed(() => {
 });
 
 const canHeal = computed(() => playerHealth.value < playerMaxHealth.value);
-const isLowHealth = computed(() => playerHealthPercent.value < 20 && !battleEnded.value);
+const isLowHealth = computed(
+	() => playerHealthPercent.value < 20 && !battleEnded.value,
+);
 const isCriticalHealth = computed(
 	() => playerHealthPercent.value < 10 && !battleEnded.value,
 );
 const showRoomStatus = ref(false);
 const showGameSettings = ref(loadPanelOpenState());
+const showInventory = ref(true);
 const hunterAbilitySuccessChances = computed(
 	() => settings.value.hunter.abilityChances,
 );
+const inventoryRows = computed(() => playerInventoryDetails.value);
+const hasInventory = computed(() => inventoryRows.value.length > 0);
+const sellAllLabel = computed(() => {
+	if (!hasInventory.value) {
+		return "Sell All";
+	}
+
+	return `Sell All (${playerInventorySaleValue.value} Gold)`;
+});
 const isActionDisabled = computed(() => {
 	if (isLoading.value) {
 		return true;
 	}
+
 	if (battleEnded.value) {
 		return true;
 	}
+
 	if (activeTurn.value !== "player") {
 		return true;
 	}
+
 	if (isSpectator.value) {
 		return true;
 	}
+
 	return false;
 });
 const isMonsterTurn = computed(() => {
 	if (battleEnded.value) {
 		return false;
 	}
+
 	if (isAwaitingMonsterAttack.value) {
 		return true;
 	}
+
 	if (activeTurn.value !== "monster") {
 		return false;
 	}
+
 	return !currentTurnHunterName.value;
 });
 const isOtherHunterTurn = computed(() => {
 	if (battleEnded.value) {
 		return false;
 	}
+
 	if (isAwaitingMonsterAttack.value) {
 		return false;
 	}
+
 	if (activeTurn.value !== "monster") {
 		return false;
 	}
+
 	return Boolean(currentTurnHunterName.value);
 });
 const turnBannerLabel = computed(() => {
 	if (battleEnded.value) {
 		return "BATTLE ENDED";
 	}
+
 	if (isAwaitingMonsterAttack.value) {
 		return "MONSTER TURN";
 	}
+
 	if (isSpectator.value && currentTurnHunterName.value) {
 		return `${currentTurnHunterName.value.toUpperCase()}'S TURN`;
 	}
+
 	if (activeTurn.value === "player") {
 		return "YOUR TURN";
 	}
+
 	if (currentTurnHunterName.value) {
 		return `${currentTurnHunterName.value.toUpperCase()}'S TURN`;
 	}
+
 	return "WAITING...";
 });
 const turnHintLabel = computed(() => {
 	if (battleEnded.value) {
 		return "Select a new monster to start another round.";
 	}
+
 	if (isAwaitingMonsterAttack.value) {
 		return `${currentMonster.value?.name ?? "Monster"} is preparing an attack.`;
 	}
+
 	if (activeTurn.value === "player" && !isSpectator.value) {
 		return "Choose an ability to take your action.";
 	}
+
 	if (isSpectator.value && currentTurnHunterName.value) {
 		return `${currentTurnHunterName.value} can act now.`;
 	}
+
 	if (currentTurnHunterName.value) {
 		return `Waiting for ${currentTurnHunterName.value} to act.`;
 	}
+
 	return "Waiting for battle state...";
 });
-const currentEncounterKey = computed(() => {
-	if (!currentMonster.value) {
-		return "";
-	}
-
-	return `${currentMonster.value.id}-${currentMonster.value.level}-${currentMonster.value.health}`;
-});
+const currentRewardId = computed(() => resolvedReward.value?.rewardId ?? "");
+const rewardDrops = computed(() => resolvedReward.value?.drops ?? []);
+const rewardGold = computed(() => resolvedReward.value?.gold ?? 0);
 const isRewardSequenceActive = computed(
 	() => showChest.value || showLootPopup.value,
 );
+const rewardActionLabel = computed(() => {
+	if (canClaimResolvedReward.value) {
+		return "Claim Reward";
+	}
+
+	return "Continue";
+});
+const rewardStatusMessage = computed(() => {
+	if (rewardClaimStatus.value === "spectator") {
+		return "Spectators can inspect the loot, but only active hunters can claim it.";
+	}
+
+	if (rewardClaimStatus.value === "ineligible") {
+		return "Only hunters alive when the monster fell can claim this reward.";
+	}
+
+	if (
+		rewardClaimStatus.value === "claimed" ||
+		hasClaimedCurrentReward.value
+	) {
+		return "You already claimed this reward.";
+	}
+
+	return "Claim the reward to bank the gold and materials in your inventory.";
+});
 
 function resetRewardSequence() {
 	showChest.value = false;
@@ -205,11 +262,20 @@ function handleChestClick() {
 	showLootPopup.value = true;
 }
 
-function handleLootClaim() {
-	addPlayerGold(goldRewardAmount);
+function handleRewardAction() {
+	if (canClaimResolvedReward.value) {
+		const didClaimReward = claimResolvedBattleReward();
+		if (!didClaimReward) {
+			return;
+		}
+	}
+
 	showLootPopup.value = false;
 	showChest.value = false;
-	pickRandomMonster();
+}
+
+function handleSellAllInventory() {
+	sellAllPlayerInventory();
 }
 
 function runBattleInteraction(action: () => void) {
@@ -327,6 +393,30 @@ function getLogItemClass(source: "hunter" | "monster" | "system") {
 	return "battle-log-item-system";
 }
 
+function getLootRarityClass(rarity: LootRarity) {
+	if (rarity === "common") {
+		return "loot-rarity-common";
+	}
+
+	if (rarity === "uncommon") {
+		return "loot-rarity-uncommon";
+	}
+
+	if (rarity === "rare") {
+		return "loot-rarity-rare";
+	}
+
+	if (rarity === "epic") {
+		return "loot-rarity-epic";
+	}
+
+	if (rarity === "legendary") {
+		return "loot-rarity-legendary";
+	}
+
+	return "loot-rarity-mythic";
+}
+
 watch(levelUpAnnouncementCount, () => {
 	void playLevelUpSound();
 	levelUpOverlayKey.value += 1;
@@ -384,37 +474,23 @@ watch(monsterDamagedCount, () => {
 	}, 220);
 });
 
-watch(currentEncounterKey, () => {
-	resetRewardSequence();
-});
-
 watch(showGameSettings, (isOpen) => {
 	persistPanelOpenState(isOpen);
 });
 
-watch(
-	() => Boolean(currentMonster.value) && battleEnded.value && monsterDefeated.value,
-	(isMonsterKilled, wasMonsterKilled) => {
-		if (!hasInitializedRewardState.value) {
-			hasInitializedRewardState.value = true;
-			if (!isMonsterKilled) {
-				resetRewardSequence();
-			}
-			return;
-		}
+watch(currentRewardId, (rewardId, previousRewardId) => {
+	if (!rewardId) {
+		resetRewardSequence();
+		return;
+	}
 
-		if (!isMonsterKilled) {
-			resetRewardSequence();
-			return;
-		}
-		if (wasMonsterKilled) {
-			return;
-		}
+	if (rewardId === previousRewardId) {
+		return;
+	}
 
-		showChest.value = true;
-		showLootPopup.value = false;
-	},
-);
+	showChest.value = true;
+	showLootPopup.value = false;
+});
 
 onMounted(() => {
 	initializeBattle();
@@ -473,7 +549,7 @@ onBeforeUnmount(() => {
 					alt="Reward chest"
 					class="loot-chest-image"
 					width="240"
-				>
+				/>
 			</button>
 			<p class="loot-chest-hint section-text-outline">
 				Click the chest to open your loot
@@ -491,23 +567,48 @@ onBeforeUnmount(() => {
 			<p class="loot-popup-subtitle section-text-outline">
 				{{ currentMonster?.name ?? "Monster" }} dropped:
 			</p>
+			<div class="loot-popup-gold">
+				<div class="loot-popup-gold-icon">
+					<Icon icon="mdi:cash-multiple" />
+				</div>
+				<div>
+					<p class="loot-popup-gold-label">Gold Reward</p>
+					<p class="loot-popup-gold-value">{{ rewardGold }}</p>
+				</div>
+			</div>
 			<ul class="loot-popup-list">
 				<li
-					v-for="lootItem in lootItems"
-					:key="lootItem.label"
+					v-for="lootItem in rewardDrops"
+					:key="lootItem.itemId"
 					class="loot-popup-item"
 				>
-					<span class="loot-popup-item-label">{{ lootItem.label }}</span>
-					<span class="loot-popup-item-value">{{ lootItem.value }}</span>
+					<div class="loot-popup-item-copy">
+						<span class="loot-popup-item-value"
+							>{{ lootItem.quantity }}x {{ lootItem.name }}</span
+						>
+						<span class="loot-popup-item-meta">
+							{{ lootItem.category }} -
+							{{ formatLootAppearance(lootItem.appearance) }}
+						</span>
+					</div>
+					<span
+						class="loot-popup-item-rarity"
+						:class="getLootRarityClass(lootItem.rarity)"
+					>
+						{{ lootRarityLabels[lootItem.rarity] }}
+					</span>
 				</li>
 			</ul>
+			<p class="loot-popup-status section-text-outline">
+				{{ rewardStatusMessage }}
+			</p>
 			<UButton
 				class="loot-popup-button w-full"
-				color="warning"
+				:color="canClaimResolvedReward ? 'warning' : 'neutral'"
 				size="lg"
-				@click="handleLootClaim"
+				@click="handleRewardAction"
 			>
-				Claim Loot
+				{{ rewardActionLabel }}
 			</UButton>
 		</div>
 	</BaseModal>
@@ -516,7 +617,12 @@ onBeforeUnmount(() => {
 		<UButton
 			color="neutral"
 			variant="soft"
-			:disabled="isLoading || isAwaitingMonsterAttack || isSpectator || isRewardSequenceActive"
+			:disabled="
+				isLoading ||
+				isAwaitingMonsterAttack ||
+				isSpectator ||
+				isRewardSequenceActive
+			"
 			@click="handlePickRandomMonster"
 		>
 			New Monster
@@ -533,13 +639,17 @@ onBeforeUnmount(() => {
 			}"
 		>
 			<p class="text-center">{{ turnBannerLabel }}</p>
-			<p class="turn-banner-hint mt-1 text-center text-[0.65rem] font-semibold tracking-[0.06em]">
+			<p
+				class="turn-banner-hint mt-1 text-center text-[0.65rem] font-semibold tracking-[0.06em]"
+			>
 				{{ turnHintLabel }}
 			</p>
 		</div>
 	</div>
 
-	<div class="fixed bottom-6 left-6 z-30 flex flex-col-reverse items-start gap-3">
+	<div
+		class="fixed bottom-6 left-6 z-30 flex flex-col-reverse items-start gap-3"
+	>
 		<div class="flex items-center gap-2">
 			<UButton
 				color="neutral"
@@ -557,19 +667,136 @@ onBeforeUnmount(() => {
 			>
 				{{ showRoomStatus ? "Hide Room" : "Show Room" }}
 			</UButton>
+			<UButton
+				color="neutral"
+				variant="soft"
+				size="sm"
+				@click="showInventory = !showInventory"
+			>
+				{{ showInventory ? "Hide Inventory" : "Inventory" }}
+			</UButton>
 			<UButton color="neutral" variant="subtle" size="sm" to="/">
 				Back Home
 			</UButton>
 		</div>
 
 		<Transition name="settings-panel">
+			<div
+				v-if="showInventory"
+				class="inventory-panel w-[min(36rem,calc(100vw-3rem))] rounded-xl border border-white/20 bg-black/60 p-4 backdrop-blur"
+			>
+				<div class="inventory-panel-header">
+					<div>
+						<p
+							class="section-text-outline text-xs uppercase tracking-[0.16em] text-white/80"
+						>
+							Inventory
+						</p>
+						<p
+							class="section-text-outline mt-1 text-sm font-semibold text-cyan-100"
+						>
+							{{
+								hasInventory
+									? `${inventoryRows.length} stacked items`
+									: "No loot collected yet"
+							}}
+						</p>
+					</div>
+					<UButton
+						color="warning"
+						variant="soft"
+						size="sm"
+						:disabled="!hasInventory"
+						@click="handleSellAllInventory"
+					>
+						{{ sellAllLabel }}
+					</UButton>
+				</div>
+
+				<div v-if="hasInventory" class="inventory-table">
+					<div class="inventory-table-head section-text-outline">
+						<span>Item</span>
+						<span>Qty</span>
+						<span>Rarity</span>
+						<span>Appearance</span>
+						<span>Value</span>
+						<span>Action</span>
+					</div>
+					<ul class="inventory-table-body">
+						<li
+							v-for="inventoryItem in inventoryRows"
+							:key="inventoryItem.itemId"
+							class="inventory-table-row"
+						>
+							<div class="inventory-cell inventory-cell-item">
+								<span class="inventory-item-name">{{
+									inventoryItem.name
+								}}</span>
+								<span class="inventory-item-meta">{{
+									inventoryItem.category
+								}}</span>
+							</div>
+							<span class="inventory-cell inventory-cell-qty">{{
+								inventoryItem.quantity
+							}}</span>
+							<span
+								class="inventory-cell inventory-cell-rarity loot-popup-item-rarity"
+								:class="
+									getLootRarityClass(inventoryItem.rarity)
+								"
+							>
+								{{ lootRarityLabels[inventoryItem.rarity] }}
+							</span>
+							<span
+								class="inventory-cell inventory-cell-appearance"
+							>
+								{{
+									formatLootAppearance(
+										inventoryItem.appearance,
+									)
+								}}
+							</span>
+							<span class="inventory-cell inventory-cell-value">
+								{{ inventoryItem.stackValue }}
+							</span>
+							<div class="inventory-cell inventory-cell-action">
+								<UButton
+									size="sm"
+									color="neutral"
+									variant="soft"
+									disabled
+								>
+									Sell
+								</UButton>
+							</div>
+						</li>
+					</ul>
+				</div>
+
+				<div v-else class="inventory-empty section-text-outline">
+					<p>Your bags are empty.</p>
+					<p>
+						Claim loot from the chest after a victory to fill this
+						panel.
+					</p>
+				</div>
+			</div>
+		</Transition>
+
+		<Transition name="settings-panel">
 			<BattleGameSettingsPanel
 				v-if="showGameSettings"
 				:settings="settings"
 				:effective-monster-settings="effectiveMonsterSettings"
-				@update-hunter-setting="updateHunterSetting($event.key, $event.value)"
-				@update-hunter-ability-setting="updateHunterAbilitySetting($event.key, $event.value)"
-				@update-monster-setting="updateMonsterSetting($event.key, $event.value)"
+				@update-hunter-setting="
+					updateHunterSetting($event.key, $event.value)
+				"
+				@update-hunter-ability-setting="
+					updateHunterAbilitySetting($event.key, $event.value)
+				"
+				@update-monster-setting="
+					updateMonsterSetting($event.key, $event.value)
+				"
 				@reset="resetGameSettings"
 			/>
 		</Transition>
@@ -579,17 +806,22 @@ onBeforeUnmount(() => {
 				v-if="showRoomStatus"
 				class="w-[min(20rem,calc(100vw-3rem))] rounded-xl border border-white/20 bg-black/55 p-3 backdrop-blur"
 			>
-				<p class="section-text-outline text-xs uppercase tracking-[0.16em] text-white/80">
+				<p
+					class="section-text-outline text-xs uppercase tracking-[0.16em] text-white/80"
+				>
 					Room Status
 				</p>
-				<p class="section-text-outline mt-1 text-sm font-semibold text-cyan-100">
+				<p
+					class="section-text-outline mt-1 text-sm font-semibold text-cyan-100"
+				>
 					Role: {{ isSpectator ? "Spectator" : "Hunter" }}
 				</p>
 				<p class="section-text-outline text-xs text-white/80">
 					Connection: {{ connectionStatus }}
 				</p>
 				<p class="section-text-outline text-xs text-white/80">
-					Active Hunters: {{ activeHunters.length }} / {{ maxHunters }}
+					Active Hunters: {{ activeHunters.length }} /
+					{{ maxHunters }}
 				</p>
 				<p class="section-text-outline text-xs text-white/80">
 					Spectators: {{ spectatorHunters.length }}
@@ -647,7 +879,11 @@ onBeforeUnmount(() => {
 					>
 						<template v-if="hunter">
 							<p
-								v-if="!isAwaitingMonsterAttack && !battleEnded && turnHunterId === hunter.id"
+								v-if="
+									!isAwaitingMonsterAttack &&
+									!battleEnded &&
+									turnHunterId === hunter.id
+								"
 								class="turn-card-badge turn-card-badge-hunter section-text-outline"
 							>
 								Turn
@@ -663,7 +899,11 @@ onBeforeUnmount(() => {
 									:style="{
 										width: `${Math.max(
 											0,
-											Math.round((hunter.health / hunter.maxHealth) * 100),
+											Math.round(
+												(hunter.health /
+													hunter.maxHealth) *
+													100,
+											),
 										)}%`,
 									}"
 								/>
@@ -673,11 +913,19 @@ onBeforeUnmount(() => {
 									{{ hunter.health }} / {{ hunter.maxHealth }}
 								</span>
 							</div>
-							<div class="section-text-outline mt-2 text-xs text-cyan-100">
-								<p class="font-semibold">Level {{ hunter.level }}</p>
+							<div
+								class="section-text-outline mt-2 text-xs text-cyan-100"
+							>
+								<p class="font-semibold">
+									Level {{ hunter.level }}
+								</p>
 								<p>
 									XP {{ hunter.experience }} /
-									{{ getRequiredExperienceForLevel(hunter.level) }}
+									{{
+										getRequiredExperienceForLevel(
+											hunter.level,
+										)
+									}}
 								</p>
 							</div>
 							<img
@@ -687,10 +935,14 @@ onBeforeUnmount(() => {
 							/>
 						</template>
 						<template v-else>
-							<p class="section-text-outline text-sm font-semibold text-white/70">
+							<p
+								class="section-text-outline text-sm font-semibold text-white/70"
+							>
 								Open Slot
 							</p>
-							<div class="mt-2 flex h-52 items-center justify-center rounded-lg border border-dashed border-white/20 text-xs text-white/50">
+							<div
+								class="mt-2 flex h-52 items-center justify-center rounded-lg border border-dashed border-white/20 text-xs text-white/50"
+							>
 								Waiting for hunter...
 							</div>
 						</template>
@@ -781,7 +1033,9 @@ onBeforeUnmount(() => {
 					<Icon class="ability-icon" icon="mdi:sword-cross" />
 					Attack
 				</span>
-				<span class="ability-chance">{{ hunterAbilitySuccessChances.attackChance }}%</span>
+				<span class="ability-chance"
+					>{{ hunterAbilitySuccessChances.attackChance }}%</span
+				>
 			</UButton>
 
 			<UButton
@@ -792,10 +1046,15 @@ onBeforeUnmount(() => {
 				@click="handleCastAuraBeam"
 			>
 				<span class="ability-label">
-					<Icon class="ability-icon ability-icon-spin" icon="mdi:star-four-points-circle" />
+					<Icon
+						class="ability-icon ability-icon-spin"
+						icon="mdi:star-four-points-circle"
+					/>
 					Aura Beam
 				</span>
-				<span class="ability-chance">{{ hunterAbilitySuccessChances.auraBeamChance }}%</span>
+				<span class="ability-chance"
+					>{{ hunterAbilitySuccessChances.auraBeamChance }}%</span
+				>
 			</UButton>
 
 			<UButton
@@ -809,7 +1068,9 @@ onBeforeUnmount(() => {
 					<Icon class="ability-icon" icon="mdi:heart-plus" />
 					Heal
 				</span>
-				<span class="ability-chance">{{ hunterAbilitySuccessChances.healChance }}%</span>
+				<span class="ability-chance"
+					>{{ hunterAbilitySuccessChances.healChance }}%</span
+				>
 			</UButton>
 
 			<UButton
@@ -823,7 +1084,9 @@ onBeforeUnmount(() => {
 					<Icon class="ability-icon" icon="mdi:fire" />
 					Burn
 				</span>
-				<span class="ability-chance">{{ hunterAbilitySuccessChances.burnChance }}%</span>
+				<span class="ability-chance"
+					>{{ hunterAbilitySuccessChances.burnChance }}%</span
+				>
 			</UButton>
 			<UButton
 				class="ability-button ability-button-empty"
@@ -891,7 +1154,6 @@ onBeforeUnmount(() => {
 				</li>
 			</ul>
 		</aside>
-
 	</main>
 </template>
 
@@ -945,7 +1207,11 @@ onBeforeUnmount(() => {
 	align-items: center;
 	justify-content: center;
 	background:
-		radial-gradient(circle at 50% 45%, rgba(250, 204, 21, 0.16), transparent 30%),
+		radial-gradient(
+			circle at 50% 45%,
+			rgba(250, 204, 21, 0.16),
+			transparent 30%
+		),
 		rgba(0, 0, 0, 0.42);
 	backdrop-filter: blur(6px);
 }
@@ -997,6 +1263,50 @@ onBeforeUnmount(() => {
 	color: rgba(255, 247, 237, 0.82);
 }
 
+.loot-popup-gold {
+	display: flex;
+	align-items: center;
+	gap: 0.9rem;
+	padding: 1rem 1.1rem;
+	border: 1px solid rgba(251, 191, 36, 0.28);
+	border-radius: 1rem;
+	background:
+		radial-gradient(
+			circle at top left,
+			rgba(251, 191, 36, 0.18),
+			transparent 42%
+		),
+		rgba(120, 53, 15, 0.18);
+}
+
+.loot-popup-gold-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.8rem;
+	height: 2.8rem;
+	border-radius: 9999px;
+	background: rgba(251, 191, 36, 0.18);
+	color: #fde68a;
+	font-size: 1.3rem;
+}
+
+.loot-popup-gold-label {
+	margin: 0;
+	font-size: 0.72rem;
+	font-weight: 800;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: rgba(253, 230, 138, 0.88);
+}
+
+.loot-popup-gold-value {
+	margin: 0.2rem 0 0;
+	font-size: 1.2rem;
+	font-weight: 800;
+	color: #fff7ed;
+}
+
 .loot-popup-list {
 	display: grid;
 	gap: 0.75rem;
@@ -1013,12 +1323,10 @@ onBeforeUnmount(() => {
 	background: rgba(255, 255, 255, 0.04);
 }
 
-.loot-popup-item-label {
-	font-size: 0.8rem;
-	font-weight: 800;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
-	color: rgba(253, 230, 138, 0.88);
+.loot-popup-item-copy {
+	display: flex;
+	flex-direction: column;
+	gap: 0.2rem;
 }
 
 .loot-popup-item-value {
@@ -1027,8 +1335,167 @@ onBeforeUnmount(() => {
 	color: #fff7ed;
 }
 
+.loot-popup-item-meta {
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: rgba(226, 232, 240, 0.74);
+}
+
+.loot-popup-item-rarity {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 6.2rem;
+	padding: 0.32rem 0.7rem;
+	border-radius: 9999px;
+	border: 1px solid rgba(255, 255, 255, 0.14);
+	font-size: 0.72rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.loot-rarity-common {
+	background: rgba(148, 163, 184, 0.18);
+	color: rgba(226, 232, 240, 0.92);
+}
+
+.loot-rarity-uncommon {
+	background: rgba(34, 197, 94, 0.16);
+	color: rgba(187, 247, 208, 0.98);
+}
+
+.loot-rarity-rare {
+	background: rgba(59, 130, 246, 0.16);
+	color: rgba(191, 219, 254, 0.98);
+}
+
+.loot-rarity-epic {
+	background: rgba(168, 85, 247, 0.16);
+	color: rgba(233, 213, 255, 0.98);
+}
+
+.loot-rarity-legendary {
+	background: rgba(245, 158, 11, 0.18);
+	color: rgba(253, 230, 138, 0.98);
+}
+
+.loot-rarity-mythic {
+	background: rgba(244, 63, 94, 0.18);
+	color: rgba(254, 205, 211, 0.98);
+}
+
+.loot-popup-status {
+	font-size: 0.82rem;
+	color: rgba(255, 247, 237, 0.82);
+}
+
 .loot-popup-button {
 	margin-top: 0.35rem;
+}
+
+.inventory-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.inventory-panel-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 1rem;
+}
+
+.inventory-table {
+	display: flex;
+	flex-direction: column;
+	gap: 0.65rem;
+}
+
+.inventory-table-head {
+	display: grid;
+	grid-template-columns: minmax(12rem, 2.2fr) 4rem 6.5rem 7rem 6rem 5.5rem;
+	gap: 0.75rem;
+	padding: 0 0.75rem;
+	font-size: 0.72rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: rgba(226, 232, 240, 0.78);
+}
+
+.inventory-table-body {
+	display: grid;
+	gap: 0.65rem;
+	max-height: 18rem;
+	overflow-y: auto;
+	padding-right: 0.2rem;
+}
+
+.inventory-table-row {
+	display: grid;
+	grid-template-columns: minmax(12rem, 2.2fr) 4rem 6.5rem 7rem 6rem 5.5rem;
+	gap: 0.75rem;
+	align-items: center;
+	padding: 0.95rem 0.75rem;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 0.9rem;
+	background: rgba(255, 255, 255, 0.04);
+}
+
+.inventory-cell {
+	min-width: 0;
+}
+
+.inventory-cell-item {
+	display: flex;
+	flex-direction: column;
+	gap: 0.2rem;
+}
+
+.inventory-item-name {
+	font-size: 0.95rem;
+	font-weight: 700;
+	color: #fff7ed;
+}
+
+.inventory-item-meta {
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: rgba(226, 232, 240, 0.72);
+}
+
+.inventory-cell-qty,
+.inventory-cell-appearance,
+.inventory-cell-value {
+	font-size: 0.88rem;
+	font-weight: 700;
+	color: rgba(255, 255, 255, 0.9);
+}
+
+.inventory-cell-rarity {
+	min-width: 0;
+}
+
+.inventory-cell-action {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.inventory-empty {
+	display: grid;
+	gap: 0.3rem;
+	padding: 1rem;
+	border: 1px dashed rgba(255, 255, 255, 0.18);
+	border-radius: 0.9rem;
+	background: rgba(255, 255, 255, 0.03);
+	font-size: 0.82rem;
+	color: rgba(255, 255, 255, 0.78);
 }
 
 @keyframes loot-chest-bob {
@@ -1571,15 +2038,31 @@ onBeforeUnmount(() => {
 	z-index: 45;
 	pointer-events: none;
 	background:
-		radial-gradient(circle at 50% 50%, rgba(255, 0, 0, 0) 58%, rgba(153, 27, 27, 0.18) 100%),
-		radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0) 70%, rgba(220, 38, 38, 0.26) 100%);
+		radial-gradient(
+			circle at 50% 50%,
+			rgba(255, 0, 0, 0) 58%,
+			rgba(153, 27, 27, 0.18) 100%
+		),
+		radial-gradient(
+			circle at 50% 50%,
+			rgba(255, 255, 255, 0) 70%,
+			rgba(220, 38, 38, 0.26) 100%
+		);
 	animation: low-health-pulse 1.1s ease-in-out infinite;
 }
 
 .low-health-overlay-critical {
 	background:
-		radial-gradient(circle at 50% 50%, rgba(255, 0, 0, 0) 54%, rgba(127, 29, 29, 0.26) 100%),
-		radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0) 66%, rgba(220, 38, 38, 0.38) 100%);
+		radial-gradient(
+			circle at 50% 50%,
+			rgba(255, 0, 0, 0) 54%,
+			rgba(127, 29, 29, 0.26) 100%
+		),
+		radial-gradient(
+			circle at 50% 50%,
+			rgba(255, 255, 255, 0) 66%,
+			rgba(220, 38, 38, 0.38) 100%
+		);
 	animation: low-health-pulse-critical 0.72s ease-in-out infinite;
 }
 

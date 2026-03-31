@@ -1,5 +1,6 @@
 import type { BattleLogMetadata } from "~~/types/battle";
 import type { MonsterAbilityName } from "~~/utils/battle-abilities";
+import type { BattleReward, LootTableEntry } from "~~/types/loot";
 
 export type HunterAbilityAction = "auraBeam" | "heal" | "burn";
 
@@ -28,7 +29,7 @@ export interface AbilityHunterState {
 export interface AbilityMonsterState {
 	name: string;
 	level: number;
-	reward: string;
+	lootTable: LootTableEntry[];
 	experienceReward: number;
 	health: number;
 	abilities?: Array<{
@@ -51,6 +52,7 @@ export interface AbilityContext<
 		source?: AbilityLogSource,
 		metadata?: BattleLogMetadata,
 	) => void;
+	resolveBattleReward: (room: TRoom, monster: TMonster) => BattleReward;
 	setNextTurnOrMonster: (room: TRoom, hunterId: string) => void;
 	awardExperienceToHunters: (room: TRoom, baseExperience: number) => void;
 }
@@ -127,6 +129,7 @@ export interface BurnEffectContext<
 		source?: AbilityLogSource,
 		metadata?: BattleLogMetadata,
 	) => void;
+	resolveBattleReward: (room: TRoom, monster: TMonster) => BattleReward;
 	awardExperienceToHunters: (room: TRoom, baseExperience: number) => void;
 	randomIntInclusive: (min: number, max: number) => number;
 }

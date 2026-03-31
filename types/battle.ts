@@ -1,4 +1,5 @@
 import type { BattleGameSettings } from "~~/types/game-settings";
+import type { BattleReward, LootTableEntry } from "~~/types/loot";
 
 export type Monster = {
 	id: number;
@@ -11,7 +12,7 @@ export type Monster = {
 		name: "attack" | "heal";
 		chance: number;
 	}>;
-	reward: string;
+	lootTable: LootTableEntry[];
 	level: number;
 	baseHealth: number;
 	baseExperience: number;
@@ -74,6 +75,7 @@ export type BattleStateMessage = {
 		maxHunters: number;
 		hunters: BattleHunterState[];
 		settings: BattleGameSettings;
+		resolvedReward: BattleReward | null;
 	};
 };
 

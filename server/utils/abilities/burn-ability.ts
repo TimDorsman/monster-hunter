@@ -7,6 +7,7 @@ import type {
 	BurnEffectContext,
 	StatusEffectResult,
 } from "~~/types/abilities";
+import { formatBattleRewardSummary } from "~~/utils/loot";
 
 const BURN_ROUNDS = 3;
 const BURN_MIN_PERCENT = 3;
@@ -82,9 +83,13 @@ export class BurnAbility {
 		);
 
 		if (context.room.monsterHealth === 0) {
+			const reward = context.resolveBattleReward(
+				context.room,
+				context.monster,
+			);
 			context.addBattleLogEntry(
 				context.room,
-				`${context.monster.name} was defeated by burn and dropped ${context.monster.reward}.`,
+				`${context.monster.name} was defeated by burn and dropped ${formatBattleRewardSummary(reward)}.`,
 				"system",
 			);
 			context.awardExperienceToHunters(

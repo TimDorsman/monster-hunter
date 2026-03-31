@@ -1,5 +1,6 @@
 import type { BattleAction } from "~~/types/abilities";
 import type { BattleGameSettings } from "~~/types/game-settings";
+import type { BattleReward, LootTableEntry } from "~~/types/loot";
 import type { MonsterAbilityName } from "~~/utils/battle-abilities";
 
 export type ElementType =
@@ -33,7 +34,7 @@ export type Monster = {
 		name: MonsterAbilityName;
 		chance: number;
 	}>;
-	reward: string;
+	lootTable: LootTableEntry[];
 };
 
 export type EncounterMonster = Monster & {
@@ -124,6 +125,7 @@ export type BattleStatePayload = {
 		maxHunters: number;
 		hunters: HunterState[];
 		settings: BattleGameSettings;
+		resolvedReward: BattleReward | null;
 	};
 };
 
@@ -149,6 +151,8 @@ export type BattleRoom = {
 	turnHunterId: string | null;
 	monsterTurnTimer: ReturnType<typeof setTimeout> | null;
 	settings: BattleGameSettings;
+	resolvedReward: BattleReward | null;
+	rewardSequence: number;
 };
 
 export const MAX_HUNTERS = 4;
