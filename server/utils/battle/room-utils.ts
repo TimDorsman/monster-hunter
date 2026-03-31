@@ -1,4 +1,5 @@
 import {
+	type BattleLogMetadata,
 	type BattleRoom,
 	type BattleStatePayload,
 	type HunterState,
@@ -20,12 +21,14 @@ export function addBattleLogEntry(
 	room: BattleRoom,
 	message: string,
 	source: LogSource = "system",
+	metadata?: BattleLogMetadata,
 ) {
 	room.logSequence += 1;
 	room.logs.push({
 		id: room.logSequence,
 		message,
 		source,
+		metadata,
 	});
 	if (room.logs.length > 40) {
 		room.logs = room.logs.slice(-40);

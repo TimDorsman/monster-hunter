@@ -17,12 +17,17 @@ export class AttackAbility {
 	>(
 		context: AttackAbilityContext<TRoom, THunter, TMonster>,
 	): AbilityExecutionResult {
+		const attackLogMetadata = {
+			eventType: "ability",
+			action: "attack",
+		} as const;
 		const didHit = context.random() < context.successChance / 100;
 		if (!didHit) {
 			context.addBattleLogEntry(
 				context.room,
 				`${context.hunter.name} attacked ${context.monster.name}, but missed.`,
 				"hunter",
+				attackLogMetadata,
 			);
 			context.setNextTurnOrMonster(context.room, context.hunter.id);
 
@@ -51,6 +56,7 @@ export class AttackAbility {
 				context.room,
 				`${context.hunter.name} defeated Lv. ${context.monster.level} ${context.monster.name} and earned ${formatBattleRewardSummary(reward)}.`,
 				"hunter",
+				attackLogMetadata,
 			);
 			context.awardExperienceToHunters(
 				context.room,
@@ -70,6 +76,7 @@ export class AttackAbility {
 			context.room,
 			`${context.hunter.name} hit ${context.monster.name} for ${playerDamage}.`,
 			"hunter",
+			attackLogMetadata,
 		);
 		context.setNextTurnOrMonster(context.room, context.hunter.id);
 

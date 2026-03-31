@@ -19,6 +19,10 @@ export class AuraBeamAbility {
 	>(
 		context: AuraBeamAbilityContext<TRoom, THunter, TMonster>,
 	): AbilityExecutionResult {
+		const auraBeamLogMetadata = {
+			eventType: "ability",
+			action: "auraBeam",
+		} as const;
 		const didHit = context.random() < context.successChance / 100;
 		const playerDamage = Math.round(
 			context.rollBasePlayerDamage(
@@ -43,6 +47,7 @@ export class AuraBeamAbility {
 					context.room,
 					`${context.hunter.name} defeated Lv. ${context.monster.level} ${context.monster.name} and earned ${formatBattleRewardSummary(reward)}.`,
 					"hunter",
+					auraBeamLogMetadata,
 				);
 				context.awardExperienceToHunters(
 					context.room,
@@ -62,12 +67,14 @@ export class AuraBeamAbility {
 				context.room,
 				`${context.hunter.name} used Aura Beam on ${context.monster.name} for ${playerDamage}.`,
 				"hunter",
+				auraBeamLogMetadata,
 			);
 		} else {
 			context.addBattleLogEntry(
 				context.room,
 				`${context.hunter.name} used Aura Beam, but missed ${context.monster.name}.`,
 				"hunter",
+				auraBeamLogMetadata,
 			);
 		}
 

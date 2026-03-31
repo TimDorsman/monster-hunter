@@ -53,10 +53,20 @@ export type EncounterMonster = Monster & {
 
 export type LogSource = "hunter" | "monster" | "system";
 
+export type BattleLogEventType = "ability";
+
+export type BattleLogAction = "attack" | "auraBeam" | "heal" | "burn";
+
+export type BattleLogMetadata = {
+	eventType: BattleLogEventType;
+	action: BattleLogAction;
+};
+
 export type BattleLogEntry = {
 	id: number;
 	message: string;
 	source: LogSource;
+	metadata?: BattleLogMetadata;
 };
 
 export type HunterRole = "hunter" | "spectator";

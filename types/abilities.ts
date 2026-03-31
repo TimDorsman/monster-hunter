@@ -1,3 +1,4 @@
+import type { BattleLogMetadata } from "~~/types/battle";
 import type { MonsterAbilityName } from "~~/utils/battle-abilities";
 import type { BattleReward, LootTableEntry } from "~~/types/loot";
 
@@ -49,6 +50,7 @@ export interface AbilityContext<
 		room: TRoom,
 		message: string,
 		source?: AbilityLogSource,
+		metadata?: BattleLogMetadata,
 	) => void;
 	resolveBattleReward: (room: TRoom, monster: TMonster) => BattleReward;
 	setNextTurnOrMonster: (room: TRoom, hunterId: string) => void;
@@ -101,6 +103,7 @@ export interface MonsterHealAbilityContext<
 		room: TRoom,
 		message: string,
 		source?: AbilityLogSource,
+		metadata?: BattleLogMetadata,
 	) => void;
 	rollMonsterHealAmount: () => number;
 }
@@ -124,6 +127,7 @@ export interface BurnEffectContext<
 		room: TRoom,
 		message: string,
 		source?: AbilityLogSource,
+		metadata?: BattleLogMetadata,
 	) => void;
 	resolveBattleReward: (room: TRoom, monster: TMonster) => BattleReward;
 	awardExperienceToHunters: (room: TRoom, baseExperience: number) => void;

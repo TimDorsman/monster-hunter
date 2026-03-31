@@ -7,6 +7,8 @@ import type {
 } from "~~/types/game-settings";
 import type { LootRarity } from "~~/types/loot";
 import { formatLootAppearance, lootRarityLabels } from "~~/utils/loot";
+import BattleGameSettingsPanel from "~~/components/BattleGameSettingsPanel.vue";
+import { useBattleAudio } from "~/composables/battle/useBattleAudio";
 import { useBattleSettingsStorage } from "~/composables/battle/useBattleSettingsStorage";
 
 const {
@@ -57,7 +59,13 @@ const {
 	castBurn,
 	healHunter,
 } = useBattle();
-const { loadPanelOpenState, persistPanelOpenState } = useBattleSettingsStorage();
+const {
+	unlockAudio: unlockBattleAudio,
+	playChestOpenSound,
+	playLevelUpSound,
+} = useBattleAudio();
+const { loadPanelOpenState, persistPanelOpenState } =
+	useBattleSettingsStorage();
 
 const showLevelUpOverlay = ref(false);
 const levelUpOverlayKey = ref(0);
@@ -232,7 +240,10 @@ const rewardStatusMessage = computed(() => {
 		return "Only hunters alive when the monster fell can claim this reward.";
 	}
 
-	if (rewardClaimStatus.value === "claimed" || hasClaimedCurrentReward.value) {
+	if (
+		rewardClaimStatus.value === "claimed" ||
+		hasClaimedCurrentReward.value
+	) {
 		return "You already claimed this reward.";
 	}
 
@@ -245,6 +256,8 @@ function resetRewardSequence() {
 }
 
 function handleChestClick() {
+	void unlockBattleAudio();
+	void playChestOpenSound();
 	showChest.value = false;
 	showLootPopup.value = true;
 }
@@ -263,6 +276,31 @@ function handleRewardAction() {
 
 function handleSellAllInventory() {
 	sellAllPlayerInventory();
+}
+
+function runBattleInteraction(action: () => void) {
+	void unlockBattleAudio();
+	action();
+}
+
+function handlePickRandomMonster() {
+	runBattleInteraction(pickRandomMonster);
+}
+
+function handleAttackMonster() {
+	runBattleInteraction(attackMonster);
+}
+
+function handleCastAuraBeam() {
+	runBattleInteraction(castAuraBeam);
+}
+
+function handleHealHunter() {
+	runBattleInteraction(healHunter);
+}
+
+function handleCastBurn() {
+	runBattleInteraction(castBurn);
 }
 
 function getRequiredExperienceForLevel(level: number) {
@@ -380,6 +418,7 @@ function getLootRarityClass(rarity: LootRarity) {
 }
 
 watch(levelUpAnnouncementCount, () => {
+	void playLevelUpSound();
 	levelUpOverlayKey.value += 1;
 	showLevelUpOverlay.value = true;
 	if (levelUpOverlayTimer) {
@@ -510,7 +549,7 @@ onBeforeUnmount(() => {
 					alt="Reward chest"
 					class="loot-chest-image"
 					width="240"
-				>
+				/>
 			</button>
 			<p class="loot-chest-hint section-text-outline">
 				Click the chest to open your loot
@@ -544,9 +583,12 @@ onBeforeUnmount(() => {
 					class="loot-popup-item"
 				>
 					<div class="loot-popup-item-copy">
-						<span class="loot-popup-item-value">{{ lootItem.quantity }}x {{ lootItem.name }}</span>
+						<span class="loot-popup-item-value"
+							>{{ lootItem.quantity }}x {{ lootItem.name }}</span
+						>
 						<span class="loot-popup-item-meta">
-							{{ lootItem.category }} - {{ formatLootAppearance(lootItem.appearance) }}
+							{{ lootItem.category }} -
+							{{ formatLootAppearance(lootItem.appearance) }}
 						</span>
 					</div>
 					<span
@@ -575,8 +617,13 @@ onBeforeUnmount(() => {
 		<UButton
 			color="neutral"
 			variant="soft"
-			:disabled="isLoading || isAwaitingMonsterAttack || isSpectator || isRewardSequenceActive"
-			@click="pickRandomMonster"
+			:disabled="
+				isLoading ||
+				isAwaitingMonsterAttack ||
+				isSpectator ||
+				isRewardSequenceActive
+			"
+			@click="handlePickRandomMonster"
 		>
 			New Monster
 		</UButton>
@@ -592,13 +639,17 @@ onBeforeUnmount(() => {
 			}"
 		>
 			<p class="text-center">{{ turnBannerLabel }}</p>
-			<p class="turn-banner-hint mt-1 text-center text-[0.65rem] font-semibold tracking-[0.06em]">
+			<p
+				class="turn-banner-hint mt-1 text-center text-[0.65rem] font-semibold tracking-[0.06em]"
+			>
 				{{ turnHintLabel }}
 			</p>
 		</div>
 	</div>
 
-	<div class="fixed bottom-6 left-6 z-30 flex flex-col-reverse items-start gap-3">
+	<div
+		class="fixed bottom-6 left-6 z-30 flex flex-col-reverse items-start gap-3"
+	>
 		<div class="flex items-center gap-2">
 			<UButton
 				color="neutral"
@@ -636,11 +687,19 @@ onBeforeUnmount(() => {
 			>
 				<div class="inventory-panel-header">
 					<div>
-						<p class="section-text-outline text-xs uppercase tracking-[0.16em] text-white/80">
+						<p
+							class="section-text-outline text-xs uppercase tracking-[0.16em] text-white/80"
+						>
 							Inventory
 						</p>
-						<p class="section-text-outline mt-1 text-sm font-semibold text-cyan-100">
-							{{ hasInventory ? `${inventoryRows.length} stacked items` : "No loot collected yet" }}
+						<p
+							class="section-text-outline mt-1 text-sm font-semibold text-cyan-100"
+						>
+							{{
+								hasInventory
+									? `${inventoryRows.length} stacked items`
+									: "No loot collected yet"
+							}}
 						</p>
 					</div>
 					<UButton
@@ -670,18 +729,32 @@ onBeforeUnmount(() => {
 							class="inventory-table-row"
 						>
 							<div class="inventory-cell inventory-cell-item">
-								<span class="inventory-item-name">{{ inventoryItem.name }}</span>
-								<span class="inventory-item-meta">{{ inventoryItem.category }}</span>
+								<span class="inventory-item-name">{{
+									inventoryItem.name
+								}}</span>
+								<span class="inventory-item-meta">{{
+									inventoryItem.category
+								}}</span>
 							</div>
-							<span class="inventory-cell inventory-cell-qty">{{ inventoryItem.quantity }}</span>
+							<span class="inventory-cell inventory-cell-qty">{{
+								inventoryItem.quantity
+							}}</span>
 							<span
 								class="inventory-cell inventory-cell-rarity loot-popup-item-rarity"
-								:class="getLootRarityClass(inventoryItem.rarity)"
+								:class="
+									getLootRarityClass(inventoryItem.rarity)
+								"
 							>
 								{{ lootRarityLabels[inventoryItem.rarity] }}
 							</span>
-							<span class="inventory-cell inventory-cell-appearance">
-								{{ formatLootAppearance(inventoryItem.appearance) }}
+							<span
+								class="inventory-cell inventory-cell-appearance"
+							>
+								{{
+									formatLootAppearance(
+										inventoryItem.appearance,
+									)
+								}}
 							</span>
 							<span class="inventory-cell inventory-cell-value">
 								{{ inventoryItem.stackValue }}
@@ -700,12 +773,12 @@ onBeforeUnmount(() => {
 					</ul>
 				</div>
 
-				<div
-					v-else
-					class="inventory-empty section-text-outline"
-				>
+				<div v-else class="inventory-empty section-text-outline">
 					<p>Your bags are empty.</p>
-					<p>Claim loot from the chest after a victory to fill this panel.</p>
+					<p>
+						Claim loot from the chest after a victory to fill this
+						panel.
+					</p>
 				</div>
 			</div>
 		</Transition>
@@ -715,9 +788,15 @@ onBeforeUnmount(() => {
 				v-if="showGameSettings"
 				:settings="settings"
 				:effective-monster-settings="effectiveMonsterSettings"
-				@update-hunter-setting="updateHunterSetting($event.key, $event.value)"
-				@update-hunter-ability-setting="updateHunterAbilitySetting($event.key, $event.value)"
-				@update-monster-setting="updateMonsterSetting($event.key, $event.value)"
+				@update-hunter-setting="
+					updateHunterSetting($event.key, $event.value)
+				"
+				@update-hunter-ability-setting="
+					updateHunterAbilitySetting($event.key, $event.value)
+				"
+				@update-monster-setting="
+					updateMonsterSetting($event.key, $event.value)
+				"
 				@reset="resetGameSettings"
 			/>
 		</Transition>
@@ -727,17 +806,22 @@ onBeforeUnmount(() => {
 				v-if="showRoomStatus"
 				class="w-[min(20rem,calc(100vw-3rem))] rounded-xl border border-white/20 bg-black/55 p-3 backdrop-blur"
 			>
-				<p class="section-text-outline text-xs uppercase tracking-[0.16em] text-white/80">
+				<p
+					class="section-text-outline text-xs uppercase tracking-[0.16em] text-white/80"
+				>
 					Room Status
 				</p>
-				<p class="section-text-outline mt-1 text-sm font-semibold text-cyan-100">
+				<p
+					class="section-text-outline mt-1 text-sm font-semibold text-cyan-100"
+				>
 					Role: {{ isSpectator ? "Spectator" : "Hunter" }}
 				</p>
 				<p class="section-text-outline text-xs text-white/80">
 					Connection: {{ connectionStatus }}
 				</p>
 				<p class="section-text-outline text-xs text-white/80">
-					Active Hunters: {{ activeHunters.length }} / {{ maxHunters }}
+					Active Hunters: {{ activeHunters.length }} /
+					{{ maxHunters }}
 				</p>
 				<p class="section-text-outline text-xs text-white/80">
 					Spectators: {{ spectatorHunters.length }}
@@ -795,7 +879,11 @@ onBeforeUnmount(() => {
 					>
 						<template v-if="hunter">
 							<p
-								v-if="!isAwaitingMonsterAttack && !battleEnded && turnHunterId === hunter.id"
+								v-if="
+									!isAwaitingMonsterAttack &&
+									!battleEnded &&
+									turnHunterId === hunter.id
+								"
 								class="turn-card-badge turn-card-badge-hunter section-text-outline"
 							>
 								Turn
@@ -811,7 +899,11 @@ onBeforeUnmount(() => {
 									:style="{
 										width: `${Math.max(
 											0,
-											Math.round((hunter.health / hunter.maxHealth) * 100),
+											Math.round(
+												(hunter.health /
+													hunter.maxHealth) *
+													100,
+											),
 										)}%`,
 									}"
 								/>
@@ -821,11 +913,19 @@ onBeforeUnmount(() => {
 									{{ hunter.health }} / {{ hunter.maxHealth }}
 								</span>
 							</div>
-							<div class="section-text-outline mt-2 text-xs text-cyan-100">
-								<p class="font-semibold">Level {{ hunter.level }}</p>
+							<div
+								class="section-text-outline mt-2 text-xs text-cyan-100"
+							>
+								<p class="font-semibold">
+									Level {{ hunter.level }}
+								</p>
 								<p>
 									XP {{ hunter.experience }} /
-									{{ getRequiredExperienceForLevel(hunter.level) }}
+									{{
+										getRequiredExperienceForLevel(
+											hunter.level,
+										)
+									}}
 								</p>
 							</div>
 							<img
@@ -835,10 +935,14 @@ onBeforeUnmount(() => {
 							/>
 						</template>
 						<template v-else>
-							<p class="section-text-outline text-sm font-semibold text-white/70">
+							<p
+								class="section-text-outline text-sm font-semibold text-white/70"
+							>
 								Open Slot
 							</p>
-							<div class="mt-2 flex h-52 items-center justify-center rounded-lg border border-dashed border-white/20 text-xs text-white/50">
+							<div
+								class="mt-2 flex h-52 items-center justify-center rounded-lg border border-dashed border-white/20 text-xs text-white/50"
+							>
 								Waiting for hunter...
 							</div>
 						</template>
@@ -923,13 +1027,15 @@ onBeforeUnmount(() => {
 				color="error"
 				size="xl"
 				:disabled="isActionDisabled"
-				@click="attackMonster"
+				@click="handleAttackMonster"
 			>
 				<span class="ability-label">
 					<Icon class="ability-icon" icon="mdi:sword-cross" />
 					Attack
 				</span>
-				<span class="ability-chance">{{ hunterAbilitySuccessChances.attackChance }}%</span>
+				<span class="ability-chance"
+					>{{ hunterAbilitySuccessChances.attackChance }}%</span
+				>
 			</UButton>
 
 			<UButton
@@ -937,13 +1043,18 @@ onBeforeUnmount(() => {
 				color="primary"
 				size="xl"
 				:disabled="isActionDisabled"
-				@click="castAuraBeam"
+				@click="handleCastAuraBeam"
 			>
 				<span class="ability-label">
-					<Icon class="ability-icon ability-icon-spin" icon="mdi:star-four-points-circle" />
+					<Icon
+						class="ability-icon ability-icon-spin"
+						icon="mdi:star-four-points-circle"
+					/>
 					Aura Beam
 				</span>
-				<span class="ability-chance">{{ hunterAbilitySuccessChances.auraBeamChance }}%</span>
+				<span class="ability-chance"
+					>{{ hunterAbilitySuccessChances.auraBeamChance }}%</span
+				>
 			</UButton>
 
 			<UButton
@@ -951,13 +1062,15 @@ onBeforeUnmount(() => {
 				color="success"
 				size="xl"
 				:disabled="isActionDisabled || !canHeal"
-				@click="healHunter"
+				@click="handleHealHunter"
 			>
 				<span class="ability-label">
 					<Icon class="ability-icon" icon="mdi:heart-plus" />
 					Heal
 				</span>
-				<span class="ability-chance">{{ hunterAbilitySuccessChances.healChance }}%</span>
+				<span class="ability-chance"
+					>{{ hunterAbilitySuccessChances.healChance }}%</span
+				>
 			</UButton>
 
 			<UButton
@@ -965,13 +1078,15 @@ onBeforeUnmount(() => {
 				color="error"
 				size="xl"
 				:disabled="isActionDisabled"
-				@click="castBurn"
+				@click="handleCastBurn"
 			>
 				<span class="ability-label">
 					<Icon class="ability-icon" icon="mdi:fire" />
 					Burn
 				</span>
-				<span class="ability-chance">{{ hunterAbilitySuccessChances.burnChance }}%</span>
+				<span class="ability-chance"
+					>{{ hunterAbilitySuccessChances.burnChance }}%</span
+				>
 			</UButton>
 			<UButton
 				class="ability-button ability-button-empty"
@@ -1039,7 +1154,6 @@ onBeforeUnmount(() => {
 				</li>
 			</ul>
 		</aside>
-
 	</main>
 </template>
 
@@ -1071,6 +1185,8 @@ onBeforeUnmount(() => {
 	top: 50%;
 	left: 50%;
 	margin: 0;
+	user-select: none;
+	-webkit-user-select: none;
 	font-size: clamp(6rem, 18vw, 24rem);
 	font-weight: 900;
 	line-height: 0.82;
@@ -1091,7 +1207,11 @@ onBeforeUnmount(() => {
 	align-items: center;
 	justify-content: center;
 	background:
-		radial-gradient(circle at 50% 45%, rgba(250, 204, 21, 0.16), transparent 30%),
+		radial-gradient(
+			circle at 50% 45%,
+			rgba(250, 204, 21, 0.16),
+			transparent 30%
+		),
 		rgba(0, 0, 0, 0.42);
 	backdrop-filter: blur(6px);
 }
@@ -1151,7 +1271,11 @@ onBeforeUnmount(() => {
 	border: 1px solid rgba(251, 191, 36, 0.28);
 	border-radius: 1rem;
 	background:
-		radial-gradient(circle at top left, rgba(251, 191, 36, 0.18), transparent 42%),
+		radial-gradient(
+			circle at top left,
+			rgba(251, 191, 36, 0.18),
+			transparent 42%
+		),
 		rgba(120, 53, 15, 0.18);
 }
 
@@ -1914,15 +2038,31 @@ onBeforeUnmount(() => {
 	z-index: 45;
 	pointer-events: none;
 	background:
-		radial-gradient(circle at 50% 50%, rgba(255, 0, 0, 0) 58%, rgba(153, 27, 27, 0.18) 100%),
-		radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0) 70%, rgba(220, 38, 38, 0.26) 100%);
+		radial-gradient(
+			circle at 50% 50%,
+			rgba(255, 0, 0, 0) 58%,
+			rgba(153, 27, 27, 0.18) 100%
+		),
+		radial-gradient(
+			circle at 50% 50%,
+			rgba(255, 255, 255, 0) 70%,
+			rgba(220, 38, 38, 0.26) 100%
+		);
 	animation: low-health-pulse 1.1s ease-in-out infinite;
 }
 
 .low-health-overlay-critical {
 	background:
-		radial-gradient(circle at 50% 50%, rgba(255, 0, 0, 0) 54%, rgba(127, 29, 29, 0.26) 100%),
-		radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0) 66%, rgba(220, 38, 38, 0.38) 100%);
+		radial-gradient(
+			circle at 50% 50%,
+			rgba(255, 0, 0, 0) 54%,
+			rgba(127, 29, 29, 0.26) 100%
+		),
+		radial-gradient(
+			circle at 50% 50%,
+			rgba(255, 255, 255, 0) 66%,
+			rgba(220, 38, 38, 0.38) 100%
+		);
 	animation: low-health-pulse-critical 0.72s ease-in-out infinite;
 }
 

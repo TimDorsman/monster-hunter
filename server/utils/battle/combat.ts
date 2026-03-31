@@ -138,6 +138,10 @@ export function executeMonsterTurn(room: BattleRoom) {
 			});
 		} else {
 			room.monsterAttackCount += 1;
+			const monsterAttackLogMetadata = {
+				eventType: "ability",
+				action: "attack",
+			} as const;
 			const didAttackHit =
 				Math.random() <
 				getEffectiveMonsterAttackChance(room, room.currentMonster) / 100;
@@ -148,8 +152,11 @@ export function executeMonsterTurn(room: BattleRoom) {
 					room,
 					`${room.currentMonster.name} attacked, but missed the party.`,
 					"monster",
+					monsterAttackLogMetadata,
 				);
 			}
+
+			let loggedMonsterAttackEvent = false;
 
 			for (const hunter of aliveHunters) {
 				if (!didAttackHit) {
@@ -160,11 +167,16 @@ export function executeMonsterTurn(room: BattleRoom) {
 					Math.random() <
 					room.settings.hunter.dodgeChance / 100
 				) {
+					const attackEventMetadata = loggedMonsterAttackEvent
+						? undefined
+						: monsterAttackLogMetadata;
 					addBattleLogEntry(
 						room,
 						`${room.currentMonster.name} attacked ${hunter.name}, but they dodged.`,
 						"monster",
+						attackEventMetadata,
 					);
+					loggedMonsterAttackEvent = true;
 					continue;
 				}
 
@@ -175,11 +187,16 @@ export function executeMonsterTurn(room: BattleRoom) {
 					) + room.currentMonster.retaliationMinDamage;
 				hunter.health = Math.max(0, hunter.health - retaliationDamage);
 				hunter.damagedCount += 1;
+				const attackEventMetadata = loggedMonsterAttackEvent
+					? undefined
+					: monsterAttackLogMetadata;
 				addBattleLogEntry(
 					room,
 					`${room.currentMonster.name} hit ${hunter.name} for ${retaliationDamage}.`,
 					"monster",
+					attackEventMetadata,
 				);
+				loggedMonsterAttackEvent = true;
 
 				if (hunter.health === 0) {
 					addBattleLogEntry(
