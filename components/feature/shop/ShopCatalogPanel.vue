@@ -128,7 +128,7 @@ const catalogTableUi = {
 					variant="soft"
 					size="xs"
 					:disabled="!row.original.canAfford"
-					@click="$emit('buy-item', row.original.itemId)"
+					@click="$emit('buy-item', row.original.id)"
 				>
 					Buy
 				</UButton>
