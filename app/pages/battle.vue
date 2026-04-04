@@ -167,6 +167,10 @@ function handleRewardAction() {
 		if (!didClaimReward) {
 			return;
 		}
+
+		closeRewardSequence();
+		pickRandomMonster();
+		return;
 	}
 
 	closeRewardSequence();
