@@ -14,8 +14,8 @@ All generated or modified code MUST conform strictly to this document.
 
 # 1. Framework & Runtime
 
-- Framework: Nuxt 3
-- Rendering mode: SSR (unless otherwise specified in nuxt.config.ts)
+- Framework: Nuxt 4
+- Rendering mode: CSR (unless otherwise specified in nuxt.config.ts)
 - Language: TypeScript (strict mode enabled)
 - API Layer: Nitro (server/)
 - State Management: Pinia
@@ -35,28 +35,30 @@ Agents must:
 
 # 2. Project Structure (Strict)
 
-The following Nuxt 3 directory structure must be respected:
+The following project directory structure must be respected:
 
 .
-├─ app.vue
-├─ nuxt.config.ts
+├─ app/
+│ ├─ app.vue
+│ ├─ assets/
+│ ├─ components/
+│ ├─ composables/
+│ ├─ data/
+│ └─ pages/
 ├─ assets/
 ├─ components/
-├─ composables/
-├─ layouts/
-├─ middleware/
-├─ pages/
-├─ plugins/
+├─ nuxt.config.ts
 ├─ public/
 ├─ server/
-│ ├─ api/
-│ ├─ middleware/
+│ ├─ routes/
+│ │ └─ api/
 │ └─ utils/
-├─ stores/
 ├─ types/
 └─ utils/
 
-No undocumented top-level directories may be introduced.
+Generated and tooling directories such as `.nuxt/`, `.output/`, and `node_modules/` are not part of the application structure.
+
+No undocumented top-level source directories may be introduced.
 
 ---
 

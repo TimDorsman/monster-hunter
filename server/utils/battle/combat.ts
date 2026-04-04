@@ -1,4 +1,5 @@
 import type { BattleAction } from "~~/types/abilities";
+import { calculateRequiredExperience } from "~~/utils/battle/progression";
 import { AttackAbility } from "../abilities/attack-ability";
 import { AuraBeamAbility } from "../abilities/aura-beam-ability";
 import { BurnAbility } from "../abilities/burn-ability";
@@ -23,10 +24,6 @@ const auraBeamAbility = new AuraBeamAbility();
 const healAbility = new HealAbility();
 const burnAbility = new BurnAbility();
 const monsterHealAbility = new MonsterHealAbility();
-
-function calculateRequiredExperience(level: number) {
-	return Math.round(60 + level * 40 + level * level * 12);
-}
 
 function rollBasePlayerDamage(
 	room: BattleRoom,

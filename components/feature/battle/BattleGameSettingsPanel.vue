@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import type { BattleGameSettings, HunterAbilityChanceSettings, HunterGameSettings, MonsterGameSettings } from "~~/types/game-settings";
+import type {
+	BattleGameSettings,
+	HunterAbilityChanceSettings,
+	HunterGameSettings,
+	MonsterGameSettings,
+} from "~~/types/game-settings";
+import type { EffectiveMonsterSettings } from "~~/types/battle-ui";
 import { GAME_SETTINGS_LIMITS } from "~~/utils/game-settings";
-
-type EffectiveMonsterSettings = {
-	health: number;
-	retaliationMinDamage: number;
-	retaliationDamageRange: number;
-	attackChance: number;
-	healChance: number;
-};
 
 type HunterSettingKey = Exclude<keyof HunterGameSettings, "abilityChances">;
 type HunterAbilitySettingKey = keyof HunterAbilityChanceSettings;
@@ -30,15 +28,18 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-	(event: "update-hunter-setting", payload: { key: HunterSettingKey; value: number }): void;
-	(event: "update-hunter-ability-setting", payload: {
-		key: HunterAbilitySettingKey;
-		value: number;
-	}): void;
-	(event: "update-monster-setting", payload: {
-		key: MonsterSettingKey;
-		value: number | null;
-	}): void;
+	(
+		event: "update-hunter-setting",
+		payload: { key: HunterSettingKey; value: number },
+	): void;
+	(
+		event: "update-hunter-ability-setting",
+		payload: { key: HunterAbilitySettingKey; value: number },
+	): void;
+	(
+		event: "update-monster-setting",
+		payload: { key: MonsterSettingKey; value: number | null },
+	): void;
 	(event: "reset"): void;
 }>();
 
@@ -150,7 +151,10 @@ function normalizeSliderValue(value: number | number[] | undefined) {
 	return value ?? 0;
 }
 
-function updateHunterSetting(key: HunterSettingKey, value: number | number[] | undefined) {
+function updateHunterSetting(
+	key: HunterSettingKey,
+	value: number | number[] | undefined,
+) {
 	emit("update-hunter-setting", {
 		key,
 		value: normalizeSliderValue(value),
@@ -294,6 +298,8 @@ function getMonsterDisplayValue(key: MonsterSettingKey) {
 
 <style scoped>
 .settings-panel {
+	max-height: min(42rem, calc(100vh - 7rem));
+	overflow-y: auto;
 	background-color: var(--ui-bg-elevated, rgba(31, 41, 55, 0.92));
 }
 
@@ -301,6 +307,10 @@ function getMonsterDisplayValue(key: MonsterSettingKey) {
 	margin-top: 1rem;
 	border-top: 1px solid rgba(255, 255, 255, 0.1);
 	padding-top: 1rem;
+}
+
+.settings-group-last {
+	padding-bottom: 0.15rem;
 }
 
 .settings-group-title {
@@ -344,5 +354,14 @@ function getMonsterDisplayValue(key: MonsterSettingKey) {
 	letter-spacing: 0.08em;
 	color: rgba(253, 224, 71, 0.95);
 	text-transform: uppercase;
+}
+
+.section-text-outline {
+	text-shadow:
+		-1px -1px 0 rgba(0, 0, 0, 0.88),
+		1px -1px 0 rgba(0, 0, 0, 0.88),
+		-1px 1px 0 rgba(0, 0, 0, 0.88),
+		1px 1px 0 rgba(0, 0, 0, 0.88),
+		0 2px 8px rgba(0, 0, 0, 0.5);
 }
 </style>
