@@ -331,8 +331,11 @@ onMounted(() => {
 			>
 				{{ showInventory ? "Hide Inventory" : "Inventory" }}
 			</UButton>
+			<UButton color="warning" variant="soft" size="sm" to="/shop">
+				Shop
+			</UButton>
 			<UButton color="neutral" variant="subtle" size="sm" to="/">
-				Back Home
+				Town Hub
 			</UButton>
 		</div>
 
