@@ -1,4 +1,5 @@
 import type { InventoryEntry, PlayerProgress } from "~~/types/loot";
+import { calculateRequiredExperience } from "~~/utils/battle/progression";
 import { stackInventoryEntries } from "~~/utils/loot";
 
 const PLAYER_PROGRESS_STORAGE_KEY = "monster-hunter-player-progress-v2";
@@ -110,10 +111,6 @@ function normalizeLegacyPlayerProgress(rawProgress: unknown): PlayerProgress {
 		inventory: [],
 		claimedRewardIds: [],
 	});
-}
-
-export function calculateRequiredExperience(level: number) {
-	return Math.round(60 + level * 40 + level * level * 12);
 }
 
 export function useBattleProgress() {
