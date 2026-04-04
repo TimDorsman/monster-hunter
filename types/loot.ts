@@ -32,7 +32,6 @@ export type ResolvedLootDrop = {
 	baseSellValue: number;
 	craftingTags: string[];
 	quantity: number;
-	appearance: number;
 };
 
 export type BattleReward = {
@@ -53,7 +52,6 @@ export type InventoryEntry = {
 	baseSellValue: number;
 	category: LootCategory;
 	craftingTags: string[];
-	appearance: number;
 	timesSold: number;
 	lastObtainedAt: number;
 };

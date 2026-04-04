@@ -6,6 +6,7 @@ import {
 	type LogSource,
 	MAX_HUNTERS,
 } from "./types";
+import { buildShopStatePayload, syncRoomShopRotationState } from "./shop";
 
 export function getActiveHunters(room: BattleRoom) {
 	return Array.from(room.hunters.values())
@@ -36,6 +37,8 @@ export function addBattleLogEntry(
 }
 
 export function buildStatePayload(room: BattleRoom): BattleStatePayload {
+	syncRoomShopRotationState(room, Date.now());
+
 	return {
 		type: "state",
 		state: {
@@ -52,6 +55,7 @@ export function buildStatePayload(room: BattleRoom): BattleStatePayload {
 			maxHunters: MAX_HUNTERS,
 			settings: room.settings,
 			resolvedReward: room.resolvedReward,
+			shop: buildShopStatePayload(room),
 			hunters: Array.from(room.hunters.values()).sort(
 				(a, b) => a.joinedAt - b.joinedAt,
 			),
@@ -61,8 +65,10 @@ export function buildStatePayload(room: BattleRoom): BattleStatePayload {
 
 export function broadcastState(room: BattleRoom) {
 	const payload = JSON.stringify(buildStatePayload(room));
-	for (const peer of room.peersByPlayerId.values()) {
-		peer.send(payload);
+	for (const peers of room.peersByPlayerId.values()) {
+		for (const peer of peers) {
+			peer.send(payload);
+		}
 	}
 }
 

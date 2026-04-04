@@ -11,32 +11,17 @@ const props = defineProps<{
 
 defineEmits<{
 	(event: "sell-all"): void;
+	(event: "sell-item", itemId: string): void;
 }>();
 
 const hasInventory = computed(() => props.inventoryRows.length > 0);
-const inventorySummaryLabel = computed(() => {
-	if (!hasInventory.value) {
-		return "No loot collected yet";
-	}
-
-	return `${props.inventoryRows.length} stacked items`;
-});
-
-const sellAllLabel = computed(() => {
-	if (!hasInventory.value) {
-		return "Sell All";
-	}
-
-	return `Sell All (${props.playerInventorySaleValue} Gold)`;
-});
-
 const inventoryColumns: TableColumn<BattleInventoryRow>[] = [
 	{
 		accessorKey: "name",
 		header: "Item",
 		meta: {
 			class: {
-				th: "w-[14rem]",
+				th: "w-[13rem]",
 				td: "whitespace-normal align-top",
 			},
 		},
@@ -71,31 +56,35 @@ const inventoryColumns: TableColumn<BattleInventoryRow>[] = [
 			},
 		},
 	},
+	{
+		id: "actions",
+		header: "",
+		meta: {
+			class: {
+				th: "w-28",
+				td: "text-right",
+			},
+		},
+	},
 ];
 
 const inventoryTableUi = {
-	root: "overflow-auto rounded-xl border border-white/10 bg-white/3",
-	base: "min-w-[35.25rem] border-separate [border-spacing:0_0.65rem]",
-	thead: "sticky top-0 z-10 bg-black/72 backdrop-blur",
+	root: "overflow-auto rounded-[1rem] border border-white/8 bg-black/24",
+	base: "min-w-[34rem] border-separate [border-spacing:0_0.35rem]",
+	thead: "sticky top-0 z-10 bg-[#110f17]/72 backdrop-blur",
 	tbody: "align-top",
 	tr: "border-0",
-	th: "border-0 bg-transparent px-3 py-0 text-left text-[0.72rem] font-extrabold uppercase tracking-[0.08em] text-slate-200/78",
-	td: "border border-white/8 bg-white/4 px-3 py-4 text-sm text-white/90 whitespace-nowrap first:rounded-l-[0.9rem] last:rounded-r-[0.9rem]",
+	th: "border-0 bg-transparent px-3 py-0 text-left text-[0.7rem] font-extrabold uppercase tracking-[0.1em] text-slate-300/76",
+	td: "border-y border-white/7 bg-white/[0.05] px-3 py-4 text-sm text-white/90 whitespace-nowrap",
 } as const;
 </script>
 
 <template>
-	<div
-		class="inventory-panel w-[min(36rem,calc(100vw-3rem))] rounded-xl border border-white/20 bg-black/60 p-4 backdrop-blur"
-	>
-		<div class="inventory-panel-header">
+	<section class="shop-panel">
+		<div class="shop-panel-header">
 			<div>
-				<p class="section-text-outline text-xs uppercase tracking-[0.16em] text-white/80">
-					Inventory
-				</p>
-				<p class="section-text-outline mt-1 text-sm font-semibold text-cyan-100">
-					{{ inventorySummaryLabel }}
-				</p>
+				<p class="shop-kicker">Hunter Inventory</p>
+				<h2 class="shop-title">Loot ready to cash out</h2>
 			</div>
 			<UButton
 				color="warning"
@@ -104,7 +93,7 @@ const inventoryTableUi = {
 				:disabled="!hasInventory"
 				@click="$emit('sell-all')"
 			>
-				{{ sellAllLabel }}
+				Sell All ({{ playerInventorySaleValue }} Gold)
 			</UButton>
 		</div>
 
@@ -114,10 +103,10 @@ const inventoryTableUi = {
 			:columns="inventoryColumns"
 			:ui="inventoryTableUi"
 			sticky="header"
-			class="inventory-table max-h-72"
+			class="max-h-[32rem]"
 		>
 			<template #name-cell="{ row }">
-				<div class="inventory-cell inventory-cell-item">
+				<div class="inventory-cell-item">
 					<span class="inventory-item-name">
 						{{ row.original.name }}
 					</span>
@@ -129,52 +118,72 @@ const inventoryTableUi = {
 
 			<template #rarity-cell="{ row }">
 				<span
-					class="inventory-cell inventory-cell-rarity loot-popup-item-rarity"
+					class="inventory-rarity-pill"
 					:class="getLootRarityClass(row.original.rarity)"
 				>
 					{{ lootRarityLabels[row.original.rarity] }}
 				</span>
 			</template>
+
+			<template #actions-cell="{ row }">
+				<UButton
+					color="warning"
+					variant="soft"
+					size="xs"
+					@click="$emit('sell-item', row.original.itemId)"
+				>
+					Sell Stack
+				</UButton>
+			</template>
 		</UTable>
 
-		<div v-else class="inventory-empty section-text-outline">
-			<p>Your bags are empty.</p>
-			<p>Claim loot from the chest after a victory to fill this panel.</p>
+		<div v-else class="shop-empty-state">
+			<p class="shop-empty-title">Your bags are empty.</p>
+			<p>Win battles, open the chest, and bring monster parts back here.</p>
 		</div>
-	</div>
+	</section>
 </template>
 
 <style scoped>
-.section-text-outline {
-	text-shadow:
-		-1px -1px 0 rgba(0, 0, 0, 0.88),
-		1px -1px 0 rgba(0, 0, 0, 0.88),
-		-1px 1px 0 rgba(0, 0, 0, 0.88),
-		1px 1px 0 rgba(0, 0, 0, 0.88),
-		0 2px 8px rgba(0, 0, 0, 0.5);
-}
-
-.inventory-panel {
+.shop-panel {
 	display: flex;
 	flex-direction: column;
 	gap: 1rem;
+	padding: 1.1rem 1rem 1rem;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 1.2rem;
+	background:
+		linear-gradient(180deg, rgba(15, 18, 31, 0.86), rgba(12, 10, 16, 0.82)),
+		radial-gradient(circle at top left, rgba(251, 191, 36, 0.12), transparent 42%);
+	backdrop-filter: blur(16px);
 }
 
-.inventory-panel-header {
+.shop-panel-header {
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
 	gap: 1rem;
 }
 
-.inventory-cell {
-	min-width: 0;
+.shop-kicker {
+	font-size: 0.72rem;
+	font-weight: 800;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: rgba(250, 204, 21, 0.72);
+}
+
+.shop-title {
+	margin-top: 0.45rem;
+	font-size: 1.3rem;
+	font-weight: 800;
+	color: #fef3c7;
 }
 
 .inventory-cell-item {
 	display: flex;
 	flex-direction: column;
-	gap: 0.2rem;
+	gap: 0.28rem;
 }
 
 .inventory-item-name {
@@ -183,37 +192,16 @@ const inventoryTableUi = {
 	color: #fff7ed;
 }
 
-.inventory-item-meta {
+.inventory-item-meta,
+.inventory-item-detail {
 	font-size: 0.72rem;
 	font-weight: 700;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
-	color: rgba(226, 232, 240, 0.72);
+	color: rgba(226, 232, 240, 0.7);
 }
 
-.inventory-cell-qty,
-.inventory-cell-value {
-	font-size: 0.88rem;
-	font-weight: 700;
-	color: rgba(255, 255, 255, 0.9);
-}
-
-.inventory-cell-rarity {
-	min-width: 0;
-}
-
-.inventory-empty {
-	display: grid;
-	gap: 0.3rem;
-	padding: 1rem;
-	border: 1px dashed rgba(255, 255, 255, 0.18);
-	border-radius: 0.9rem;
-	background: rgba(255, 255, 255, 0.03);
-	font-size: 0.82rem;
-	color: rgba(255, 255, 255, 0.78);
-}
-
-.loot-popup-item-rarity {
+.inventory-rarity-pill {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -225,6 +213,22 @@ const inventoryTableUi = {
 	font-weight: 800;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
+}
+
+.shop-empty-state {
+	display: grid;
+	gap: 0.32rem;
+	padding: 1rem;
+	border: 1px dashed rgba(255, 255, 255, 0.16);
+	border-radius: 1rem;
+	background: rgba(255, 255, 255, 0.04);
+	color: rgba(241, 245, 249, 0.8);
+}
+
+.shop-empty-title {
+	font-size: 1rem;
+	font-weight: 700;
+	color: #f8fafc;
 }
 
 .loot-rarity-common {
@@ -255,5 +259,15 @@ const inventoryTableUi = {
 .loot-rarity-mythic {
 	background: rgba(244, 63, 94, 0.18);
 	color: rgba(254, 205, 211, 0.98);
+}
+
+@media (max-width: 640px) {
+	.shop-panel {
+		padding: 0.95rem 0.85rem 0.85rem;
+	}
+
+	.shop-panel-header {
+		flex-direction: column;
+	}
 }
 </style>

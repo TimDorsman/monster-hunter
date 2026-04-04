@@ -8,7 +8,7 @@ import {
 	getBattleRewardActionLabel,
 	getBattleRewardStatusMessage,
 } from "~~/utils/battle/presentation";
-import { formatLootAppearance, lootRarityLabels } from "~~/utils/loot";
+import { lootRarityLabels } from "~~/utils/loot";
 
 const props = defineProps<{
 	showChest: boolean;
@@ -94,8 +94,7 @@ const lootPopupOpen = computed({
 							{{ lootItem.quantity }}x {{ lootItem.name }}
 						</span>
 						<span class="loot-popup-item-meta">
-							{{ lootItem.category }} -
-							{{ formatLootAppearance(lootItem.appearance) }}
+							{{ lootItem.category }}
 						</span>
 					</div>
 					<span

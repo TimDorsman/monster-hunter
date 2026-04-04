@@ -1,6 +1,7 @@
 import type { BattleAction } from "~~/types/abilities";
 import type { BattleGameSettings } from "~~/types/game-settings";
 import type { BattleReward, LootTableEntry } from "~~/types/loot";
+import type { ShopRotationState, ShopStatePayload } from "~~/types/shop";
 import type { MonsterAbilityName } from "~~/utils/battle-abilities";
 
 export type ElementType =
@@ -126,6 +127,7 @@ export type BattleStatePayload = {
 		hunters: HunterState[];
 		settings: BattleGameSettings;
 		resolvedReward: BattleReward | null;
+		shop: ShopStatePayload;
 	};
 };
 
@@ -134,7 +136,7 @@ export type PeerLike = {
 };
 
 export type BattleRoom = {
-	peersByPlayerId: Map<string, PeerLike>;
+	peersByPlayerId: Map<string, Set<PeerLike>>;
 	playerIdByPeer: Map<PeerLike, string>;
 	hunters: Map<string, HunterState>;
 	disconnectCleanupTimers: Map<string, ReturnType<typeof setTimeout>>;
@@ -153,6 +155,8 @@ export type BattleRoom = {
 	settings: BattleGameSettings;
 	resolvedReward: BattleReward | null;
 	rewardSequence: number;
+	shopRotationState: ShopRotationState;
+	shopRefreshTimer: ReturnType<typeof setTimeout> | null;
 };
 
 export const MAX_HUNTERS = 4;

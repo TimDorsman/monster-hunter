@@ -41,37 +41,6 @@ function clampPositiveInteger(value: number, fallback: number) {
 	return Math.max(1, Math.floor(value));
 }
 
-function normalizeAppearanceValue(value: number, fallback = 1) {
-	if (!Number.isFinite(value)) {
-		return fallback;
-	}
-
-	return Math.min(1, Math.max(0, Math.round(value * 100000) / 100000));
-}
-
-export function formatLootAppearance(appearance: number) {
-	return normalizeAppearanceValue(appearance).toFixed(5);
-}
-
-function calculateWeightedAppearance(
-	currentAppearance: number,
-	currentQuantity: number,
-	nextAppearance: number,
-	nextQuantity: number,
-) {
-	const totalQuantity = Math.max(1, currentQuantity + nextQuantity);
-	const weightedAppearance =
-		(currentAppearance * currentQuantity + nextAppearance * nextQuantity) /
-		totalQuantity;
-	return normalizeAppearanceValue(weightedAppearance);
-}
-
-function rollDropAppearance(random: () => number) {
-	return normalizeAppearanceValue(
-		Math.floor(random() * 100001) / 100000,
-	);
-}
-
 function cloneInventoryEntry(entry: InventoryEntry): InventoryEntry {
 	return {
 		...entry,
@@ -164,7 +133,6 @@ export function resolveLootTableDrops(
 			baseSellValue: itemDefinition.baseSellValue,
 			craftingTags: [...itemDefinition.craftingTags],
 			quantity: rollDropQuantity(entry, random),
-			appearance: rollDropAppearance(random),
 		});
 	}
 
@@ -187,7 +155,6 @@ export function resolveLootTableDrops(
 			baseSellValue: fallbackItemDefinition.baseSellValue,
 			craftingTags: [...fallbackItemDefinition.craftingTags],
 			quantity: Math.max(1, Math.floor(fallbackEntry.minQuantity)),
-			appearance: rollDropAppearance(random),
 		},
 	];
 }
@@ -222,7 +189,6 @@ export function createInventoryEntry(
 		baseSellValue: drop.baseSellValue,
 		category: drop.category,
 		craftingTags: [...drop.craftingTags],
-		appearance: drop.appearance,
 		timesSold: 0,
 		lastObtainedAt: obtainedAt,
 	};
@@ -239,12 +205,6 @@ export function stackInventoryEntries(inventory: InventoryEntry[]) {
 			continue;
 		}
 
-		existingEntry.appearance = calculateWeightedAppearance(
-			existingEntry.appearance,
-			existingEntry.quantity,
-			clonedEntry.appearance,
-			clonedEntry.quantity,
-		);
 		existingEntry.quantity += clonedEntry.quantity;
 		existingEntry.lastObtainedAt = Math.max(
 			existingEntry.lastObtainedAt,
@@ -271,12 +231,6 @@ export function mergeInventoryDrops(
 		);
 
 		if (existingEntry) {
-			existingEntry.appearance = calculateWeightedAppearance(
-				existingEntry.appearance,
-				existingEntry.quantity,
-				drop.appearance,
-				drop.quantity,
-			);
 			existingEntry.quantity += drop.quantity;
 			existingEntry.lastObtainedAt = obtainedAt;
 			continue;

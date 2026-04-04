@@ -39,6 +39,12 @@ export function useBattlePageUi(options: UseBattlePageUiOptions) {
 	let monsterShakeTimer: ReturnType<typeof setTimeout> | null = null;
 	let hunterHitTimer: ReturnType<typeof setTimeout> | null = null;
 	let monsterHitTimer: ReturnType<typeof setTimeout> | null = null;
+	let hasHydratedLevelUpCount = false;
+	let hasHydratedHunterAttackCount = false;
+	let hasHydratedMonsterAttackCount = false;
+	let hasHydratedHunterDamagedCount = false;
+	let hasHydratedMonsterDamagedCount = false;
+	let hasHydratedRewardId = false;
 
 	function resetRewardSequence() {
 		showChest.value = false;
@@ -68,6 +74,11 @@ export function useBattlePageUi(options: UseBattlePageUiOptions) {
 	}
 
 	watch(options.levelUpAnnouncementCount, () => {
+		if (!hasHydratedLevelUpCount) {
+			hasHydratedLevelUpCount = true;
+			return;
+		}
+
 		options.onLevelUp();
 		levelUpOverlayKey.value += 1;
 		showLevelUpOverlay.value = true;
@@ -81,6 +92,11 @@ export function useBattlePageUi(options: UseBattlePageUiOptions) {
 	});
 
 	watch(options.hunterAttackCount, () => {
+		if (!hasHydratedHunterAttackCount) {
+			hasHydratedHunterAttackCount = true;
+			return;
+		}
+
 		isHunterCardShaking.value = true;
 		if (hunterShakeTimer) {
 			clearTimeout(hunterShakeTimer);
@@ -92,6 +108,11 @@ export function useBattlePageUi(options: UseBattlePageUiOptions) {
 	});
 
 	watch(options.monsterAttackCount, () => {
+		if (!hasHydratedMonsterAttackCount) {
+			hasHydratedMonsterAttackCount = true;
+			return;
+		}
+
 		isMonsterCardShaking.value = true;
 		if (monsterShakeTimer) {
 			clearTimeout(monsterShakeTimer);
@@ -103,6 +124,11 @@ export function useBattlePageUi(options: UseBattlePageUiOptions) {
 	});
 
 	watch(options.hunterDamagedCount, () => {
+		if (!hasHydratedHunterDamagedCount) {
+			hasHydratedHunterDamagedCount = true;
+			return;
+		}
+
 		isHunterCardHit.value = true;
 		if (hunterHitTimer) {
 			clearTimeout(hunterHitTimer);
@@ -114,6 +140,11 @@ export function useBattlePageUi(options: UseBattlePageUiOptions) {
 	});
 
 	watch(options.monsterDamagedCount, () => {
+		if (!hasHydratedMonsterDamagedCount) {
+			hasHydratedMonsterDamagedCount = true;
+			return;
+		}
+
 		isMonsterCardHit.value = true;
 		if (monsterHitTimer) {
 			clearTimeout(monsterHitTimer);
@@ -129,6 +160,11 @@ export function useBattlePageUi(options: UseBattlePageUiOptions) {
 	});
 
 	watch(options.currentRewardId, (rewardId, previousRewardId) => {
+		if (!hasHydratedRewardId) {
+			hasHydratedRewardId = true;
+			return;
+		}
+
 		if (!rewardId) {
 			resetRewardSequence();
 			return;

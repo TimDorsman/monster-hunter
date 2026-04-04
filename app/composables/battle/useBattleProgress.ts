@@ -27,7 +27,6 @@ function normalizeInventoryEntry(
 	const baseSellValue = Number(entry.baseSellValue);
 	const timesSold = Number(entry.timesSold);
 	const lastObtainedAt = Number(entry.lastObtainedAt);
-	const appearance = Number(entry.appearance);
 
 	return {
 		itemId: entry.itemId,
@@ -44,10 +43,6 @@ function normalizeInventoryEntry(
 					.filter((tag): tag is string => typeof tag === "string")
 					.slice(0, 12)
 			: [],
-		appearance:
-			Number.isFinite(appearance) && appearance >= 0 && appearance <= 1
-				? Math.round(appearance * 100000) / 100000
-				: 1,
 		timesSold:
 			Number.isFinite(timesSold) && timesSold >= 0
 				? Math.floor(timesSold)
