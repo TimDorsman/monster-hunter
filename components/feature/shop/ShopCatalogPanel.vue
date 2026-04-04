@@ -70,13 +70,13 @@ const catalogColumns: TableColumn<ShopCatalogRow>[] = [
 ];
 
 const catalogTableUi = {
-	root: "overflow-auto rounded-[1.25rem] border border-white/10 bg-black/28",
-	base: "min-w-[35rem] border-separate [border-spacing:0_0.65rem]",
-	thead: "sticky top-0 z-10 bg-[#16131d]/90 backdrop-blur",
+	root: "overflow-auto rounded-[1rem] border border-white/8 bg-black/24",
+	base: "min-w-[35rem] border-separate [border-spacing:0_0.35rem]",
+	thead: "sticky top-0 z-10 bg-[#16131d]/72 backdrop-blur",
 	tbody: "align-top",
 	tr: "border-0",
 	th: "border-0 bg-transparent px-3 py-0 text-left text-[0.7rem] font-extrabold uppercase tracking-[0.1em] text-slate-300/76",
-	td: "border border-white/7 bg-white/[0.045] px-3 py-4 text-sm text-white/90 whitespace-nowrap first:rounded-l-[0.95rem] last:rounded-r-[0.95rem]",
+	td: "border-y border-white/7 bg-white/[0.05] px-3 py-4 text-sm text-white/90 whitespace-nowrap",
 } as const;
 </script>
 
@@ -142,16 +142,13 @@ const catalogTableUi = {
 	display: flex;
 	flex-direction: column;
 	gap: 1rem;
-	padding: 1.35rem;
+	padding: 1.1rem 1rem 1rem;
 	border: 1px solid rgba(255, 255, 255, 0.1);
-	border-radius: 1.5rem;
+	border-radius: 1.2rem;
 	background:
-		linear-gradient(180deg, rgba(13, 16, 30, 0.92), rgba(11, 9, 16, 0.86)),
+		linear-gradient(180deg, rgba(13, 16, 30, 0.84), rgba(11, 9, 16, 0.8)),
 		radial-gradient(circle at top right, rgba(34, 197, 94, 0.14), transparent 42%);
-	box-shadow:
-		0 16px 38px rgba(0, 0, 0, 0.3),
-		inset 0 1px 0 rgba(255, 255, 255, 0.05);
-	backdrop-filter: blur(18px);
+	backdrop-filter: blur(16px);
 }
 
 .shop-panel-header {
@@ -250,7 +247,7 @@ const catalogTableUi = {
 
 @media (max-width: 640px) {
 	.shop-panel {
-		padding: 1rem;
+		padding: 0.95rem 0.85rem 0.85rem;
 	}
 
 	.shop-panel-header {

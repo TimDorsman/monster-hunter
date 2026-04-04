@@ -9,6 +9,7 @@ type UseBattleSocketOptions = {
 	getPlayerExperience: () => number;
 	getGameSettings: () => BattleGameSettings;
 	onStateMessage: (message: BattleStateMessage) => void;
+	syncSettingsOnOpen?: boolean;
 };
 
 type IncomingMessage = BattleStateMessage | { type: "pong" };
@@ -147,7 +148,9 @@ export function useBattleSocket(options: UseBattleSocketOptions) {
 				level: options.getPlayerLevel(),
 				experience: options.getPlayerExperience(),
 			});
-			sendSettings(options.getGameSettings());
+			if (options.syncSettingsOnOpen !== false) {
+				sendSettings(options.getGameSettings());
+			}
 		});
 
 		ws.addEventListener("message", async (event) => {

@@ -2,6 +2,7 @@
 import { Icon } from "@iconify/vue";
 import ShopCatalogPanel from "~~/components/feature/shop/ShopCatalogPanel.vue";
 import ShopInventoryPanel from "~~/components/feature/shop/ShopInventoryPanel.vue";
+import AnimatedNumber from "~~/components/ui/AnimatedNumber.vue";
 import { useShop } from "~/composables/useShop";
 
 const {
@@ -9,6 +10,9 @@ const {
 	inventoryRows,
 	inventorySaleValue,
 	merchantRows,
+	refreshMinutes,
+	refreshSeconds,
+	stockItemCount,
 	feedback,
 	buyItem,
 	sellItemStack,
@@ -53,34 +57,65 @@ const feedbackClass = computed(() => {
 				</div>
 			</header>
 
-			<section class="shop-status-grid">
-				<div class="shop-gold-card">
-					<div class="shop-gold-icon">
-						<Icon icon="mdi:cash-multiple" />
-					</div>
-					<div>
-						<p class="shop-status-label">Current Gold</p>
-						<p class="shop-status-value">{{ playerGold }}</p>
-					</div>
-				</div>
+			<section class="shop-market-shell">
+				<div class="shop-market-backdrop" />
 
-				<div class="shop-feedback-card" :class="feedbackClass">
-					<p class="shop-status-label">Trader Notes</p>
-					<p class="shop-feedback-message">{{ feedback.message }}</p>
-				</div>
-			</section>
+				<section class="shop-status-strip">
+					<div class="shop-gold-meter">
+						<div class="shop-gold-icon">
+							<Icon icon="mdi:cash-multiple" />
+						</div>
+						<div>
+							<p class="shop-status-label">Current Gold</p>
+							<p class="shop-status-value">
+								<AnimatedNumber :value="playerGold" />
+							</p>
+						</div>
+					</div>
 
-			<section class="shop-panels">
-				<ShopCatalogPanel
-					:merchant-rows="merchantRows"
-					@buy-item="buyItem"
-				/>
-				<ShopInventoryPanel
-					:inventory-rows="inventoryRows"
-					:player-inventory-sale-value="inventorySaleValue"
-					@sell-item="sellItemStack"
-					@sell-all="sellAllItemStacks"
-				/>
+					<div class="shop-timer-meter">
+						<div class="shop-timer-icon">
+							<Icon icon="mdi:timer-sand" />
+						</div>
+						<div>
+							<p class="shop-status-label">New Stock In</p>
+							<div class="shop-timer-value">
+								<AnimatedNumber
+									:value="refreshMinutes"
+									:minimum-integer-digits="2"
+									:highlight-direction="false"
+								/>
+								<span class="shop-timer-separator">:</span>
+								<AnimatedNumber
+									:value="refreshSeconds"
+									:minimum-integer-digits="2"
+									:highlight-direction="false"
+								/>
+							</div>
+							<p class="shop-status-meta">
+								{{ stockItemCount }} items in this rotation
+							</p>
+						</div>
+					</div>
+
+					<div class="shop-feedback-strip" :class="feedbackClass">
+						<p class="shop-status-label">Trader Notes</p>
+						<p class="shop-feedback-message">{{ feedback.message }}</p>
+					</div>
+				</section>
+
+				<section class="shop-panels">
+					<ShopCatalogPanel
+						:merchant-rows="merchantRows"
+						@buy-item="buyItem"
+					/>
+					<ShopInventoryPanel
+						:inventory-rows="inventoryRows"
+						:player-inventory-sale-value="inventorySaleValue"
+						@sell-item="sellItemStack"
+						@sell-all="sellAllItemStacks"
+					/>
+				</section>
 			</section>
 		</div>
 	</main>
@@ -97,34 +132,39 @@ const feedbackClass = computed(() => {
 	inset: 0;
 	pointer-events: none;
 	background:
-		radial-gradient(circle at top left, rgba(251, 191, 36, 0.12), transparent 26%),
-		radial-gradient(circle at top right, rgba(34, 197, 94, 0.12), transparent 24%),
-		linear-gradient(180deg, rgba(12, 9, 18, 0.12), rgba(6, 8, 15, 0.42));
+		radial-gradient(circle at top left, rgba(251, 191, 36, 0.13), transparent 24%),
+		radial-gradient(circle at top right, rgba(34, 197, 94, 0.11), transparent 22%),
+		repeating-linear-gradient(
+			90deg,
+			rgba(255, 255, 255, 0.02) 0,
+			rgba(255, 255, 255, 0.02) 1px,
+			transparent 1px,
+			transparent 88px
+		),
+		linear-gradient(180deg, rgba(12, 9, 18, 0.1), rgba(6, 8, 15, 0.38));
 	z-index: 0;
 }
 
 .shop-hero,
-.shop-status-grid,
+.shop-market-shell,
+.shop-status-strip,
 .shop-panels {
 	position: relative;
 	z-index: 1;
 }
 
 .shop-hero {
-	display: flex;
-	align-items: flex-end;
-	justify-content: space-between;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: end;
 	gap: 1.5rem;
-	padding: 1.6rem;
-	border: 1px solid rgba(255, 255, 255, 0.1);
-	border-radius: 1.75rem;
+	padding: 1.2rem 1.35rem 1.4rem;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 1.4rem;
 	background:
-		linear-gradient(135deg, rgba(20, 16, 28, 0.92), rgba(12, 13, 23, 0.86)),
+		linear-gradient(135deg, rgba(20, 16, 28, 0.88), rgba(12, 13, 23, 0.82)),
 		radial-gradient(circle at top left, rgba(251, 191, 36, 0.18), transparent 40%);
-	box-shadow:
-		0 20px 60px rgba(0, 0, 0, 0.32),
-		inset 0 1px 0 rgba(255, 255, 255, 0.06);
-	backdrop-filter: blur(18px);
+	backdrop-filter: blur(16px);
 }
 
 .shop-hero-copy {
@@ -162,43 +202,62 @@ const feedbackClass = computed(() => {
 	gap: 0.8rem;
 }
 
-.shop-status-grid {
+.shop-status-strip {
 	display: grid;
-	grid-template-columns: minmax(0, 18rem) minmax(0, 1fr);
+	grid-template-columns: minmax(0, 18rem) minmax(0, 17rem) minmax(0, 1fr);
 	gap: 1rem;
+	align-items: end;
 }
 
-.shop-gold-card,
-.shop-feedback-card {
+.shop-market-shell {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	padding: 1.15rem;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 1.5rem;
+	overflow: hidden;
+	background: rgba(4, 8, 18, 0.52);
+	backdrop-filter: blur(18px);
+}
+
+.shop-market-backdrop {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background:
+		radial-gradient(circle at top left, rgba(251, 191, 36, 0.14), transparent 28%),
+		radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.12), transparent 34%),
+		linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0));
+}
+
+.shop-gold-meter,
+.shop-timer-meter,
+.shop-feedback-strip {
 	display: flex;
 	align-items: center;
 	gap: 1rem;
-	padding: 1.1rem 1.2rem;
-	border: 1px solid rgba(255, 255, 255, 0.08);
-	border-radius: 1.35rem;
-	backdrop-filter: blur(16px);
-}
-
-.shop-gold-card {
-	background: linear-gradient(135deg, rgba(120, 53, 15, 0.72), rgba(38, 20, 7, 0.82));
-}
-
-.shop-feedback-card {
-	background: linear-gradient(135deg, rgba(15, 23, 42, 0.84), rgba(9, 12, 20, 0.82));
+	padding: 0.95rem 1.1rem;
+	border: 1px solid rgba(255, 255, 255, 0.09);
+	border-radius: 1.1rem;
+	backdrop-filter: blur(14px);
+	background: rgba(10, 14, 24, 0.7);
 }
 
 .shop-feedback-neutral {
 	border-color: rgba(148, 163, 184, 0.2);
+	background: rgba(15, 23, 42, 0.76);
 }
 
 .shop-feedback-success {
 	border-color: rgba(74, 222, 128, 0.3);
-	background: linear-gradient(135deg, rgba(17, 94, 89, 0.72), rgba(9, 34, 31, 0.84));
+	background: linear-gradient(135deg, rgba(8, 54, 47, 0.88), rgba(8, 27, 25, 0.82));
 }
 
 .shop-feedback-danger {
 	border-color: rgba(248, 113, 113, 0.32);
-	background: linear-gradient(135deg, rgba(127, 29, 29, 0.74), rgba(42, 10, 10, 0.84));
+	background: linear-gradient(135deg, rgba(95, 24, 24, 0.9), rgba(34, 10, 10, 0.84));
 }
 
 .shop-gold-icon {
@@ -206,9 +265,20 @@ const feedbackClass = computed(() => {
 	place-items: center;
 	width: 3rem;
 	height: 3rem;
-	border-radius: 9999px;
-	background: rgba(255, 255, 255, 0.1);
+	border-radius: 0.95rem;
+	background: linear-gradient(135deg, rgba(146, 64, 14, 0.64), rgba(51, 24, 8, 0.82));
 	color: #fde68a;
+	font-size: 1.35rem;
+}
+
+.shop-timer-icon {
+	display: grid;
+	place-items: center;
+	width: 3rem;
+	height: 3rem;
+	border-radius: 0.95rem;
+	background: linear-gradient(135deg, rgba(21, 101, 192, 0.62), rgba(16, 35, 68, 0.8));
+	color: #bfdbfe;
 	font-size: 1.35rem;
 }
 
@@ -225,6 +295,31 @@ const feedbackClass = computed(() => {
 	font-size: 1.85rem;
 	font-weight: 900;
 	color: #fff7ed;
+}
+
+.shop-timer-value {
+	display: flex;
+	align-items: center;
+	gap: 0.16rem;
+	margin-top: 0.32rem;
+	font-size: 1.85rem;
+	font-weight: 900;
+	color: #eff6ff;
+	font-variant-numeric: tabular-nums;
+}
+
+.shop-timer-separator {
+	display: inline-block;
+	transform: translateY(-0.04em);
+	color: rgba(226, 232, 240, 0.86);
+}
+
+.shop-status-meta {
+	margin-top: 0.18rem;
+	font-size: 0.76rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	color: rgba(191, 219, 254, 0.76);
 }
 
 .shop-feedback-message {
@@ -248,11 +343,11 @@ const feedbackClass = computed(() => {
 
 @media (max-width: 900px) {
 	.shop-hero {
-		flex-direction: column;
-		align-items: flex-start;
+		grid-template-columns: 1fr;
+		align-items: start;
 	}
 
-	.shop-status-grid {
+	.shop-status-strip {
 		grid-template-columns: 1fr;
 	}
 }
@@ -264,8 +359,7 @@ const feedbackClass = computed(() => {
 	}
 
 	.shop-hero {
-		padding: 1.15rem;
-		border-radius: 1.35rem;
+		padding: 1rem 1rem 1.1rem;
 	}
 
 	.shop-heading {
@@ -274,6 +368,11 @@ const feedbackClass = computed(() => {
 
 	.shop-hero-actions {
 		width: 100%;
+	}
+
+	.shop-market-shell {
+		padding: 0.95rem;
+		border-radius: 1.2rem;
 	}
 }
 </style>

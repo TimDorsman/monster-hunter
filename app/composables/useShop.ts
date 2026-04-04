@@ -1,7 +1,14 @@
-import { computed, ref } from "vue";
+import { computed, onMounted, onScopeDispose, ref } from "vue";
 import type { BattleInventoryRow } from "~~/types/battle-ui";
-import type { ShopCatalogRow, ShopFeedback } from "~~/types/shop";
+import type { BattleStateMessage } from "~~/types/battle";
+import type { LootItemDefinition } from "~~/types/loot";
+import type {
+	ShopCatalogRow,
+	ShopFeedback,
+	ShopStatePayload,
+} from "~~/types/shop";
 import { getLootItemDefinition } from "~~/utils/loot";
+import { createDefaultBattleGameSettings } from "~~/utils/game-settings";
 import { sellAllInventory } from "~~/utils/battle/rewards";
 import {
 	buyLootItem,
@@ -9,6 +16,7 @@ import {
 	getShopCatalog,
 	sellInventoryItem,
 } from "~~/utils/shop";
+import { useBattleSocket } from "~/composables/battle/useBattleSocket";
 import { useBattlePlayerProgress } from "~/composables/battle/useBattlePlayerProgress";
 
 const DEFAULT_FEEDBACK: ShopFeedback = {
@@ -16,9 +24,27 @@ const DEFAULT_FEEDBACK: ShopFeedback = {
 	tone: "neutral",
 };
 
+const PLAYER_NAME = "Swifty Mercury";
+
+function createDefaultShopStatePayload(): ShopStatePayload {
+	return {
+		stockItemIds: [],
+		nextRefreshAt: Date.now(),
+	};
+}
+
 export function useShop() {
 	const playerProgress = useBattlePlayerProgress();
 	const feedback = ref<ShopFeedback>(DEFAULT_FEEDBACK);
+	const currentTime = ref(Date.now());
+	const sharedShopState = ref<ShopStatePayload>(createDefaultShopStatePayload());
+
+	const shopCatalog = getShopCatalog();
+	const catalogById = new Map(
+		shopCatalog.map((itemDefinition) => [itemDefinition.id, itemDefinition]),
+	);
+
+	let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
 	const inventoryRows = computed<BattleInventoryRow[]>(() => {
 		return playerProgress.playerInventoryDetails.value;
@@ -32,19 +58,51 @@ export function useShop() {
 			]),
 		);
 
-		return getShopCatalog().map((itemDefinition) => {
-			const buyPrice = calculateLootBuyPrice(
-				itemDefinition.baseSellValue,
-				itemDefinition.rarity,
-			);
+		return sharedShopState.value.stockItemIds
+			.map((itemId) => catalogById.get(itemId) ?? null)
+			.filter(
+				(itemDefinition): itemDefinition is LootItemDefinition =>
+					Boolean(itemDefinition),
+			)
+			.map((itemDefinition) => {
+				const buyPrice = calculateLootBuyPrice(
+					itemDefinition.baseSellValue,
+					itemDefinition.rarity,
+				);
 
-			return {
-				...itemDefinition,
-				buyPrice,
-				canAfford: playerProgress.playerGold.value >= buyPrice,
-				ownedQuantity: ownedQuantityByItemId.get(itemDefinition.id) ?? 0,
-			};
-		});
+				return {
+					...itemDefinition,
+					buyPrice,
+					canAfford: playerProgress.playerGold.value >= buyPrice,
+					ownedQuantity: ownedQuantityByItemId.get(itemDefinition.id) ?? 0,
+				};
+			});
+	});
+
+	const remainingTotalSeconds = computed(() => {
+		const millisecondsRemaining =
+			sharedShopState.value.nextRefreshAt - currentTime.value;
+		return Math.max(0, Math.ceil(millisecondsRemaining / 1000));
+	});
+	const refreshMinutes = computed(() =>
+		Math.floor(remainingTotalSeconds.value / 60),
+	);
+	const refreshSeconds = computed(() => remainingTotalSeconds.value % 60);
+	const stockItemCount = computed(() => merchantRows.value.length);
+
+	function applySharedShopState(message: BattleStateMessage) {
+		sharedShopState.value = message.state.shop;
+		currentTime.value = Date.now();
+	}
+
+	const socket = useBattleSocket({
+		playerId: playerProgress.playerId,
+		playerName: PLAYER_NAME,
+		getPlayerLevel: () => playerProgress.playerLevel.value,
+		getPlayerExperience: () => playerProgress.playerExperience.value,
+		getGameSettings: () => createDefaultBattleGameSettings(),
+		onStateMessage: applySharedShopState,
+		syncSettingsOnOpen: false,
 	});
 
 	function setFeedback(nextFeedback: ShopFeedback) {
@@ -109,11 +167,30 @@ export function useShop() {
 		return saleResult.goldEarned;
 	}
 
+	onMounted(() => {
+		socket.connect();
+		countdownTimer = setInterval(() => {
+			currentTime.value = Date.now();
+		}, 1000);
+	});
+
+	onScopeDispose(() => {
+		if (!countdownTimer) {
+			return;
+		}
+
+		clearInterval(countdownTimer);
+		countdownTimer = null;
+	});
+
 	return {
 		playerGold: playerProgress.playerGold,
 		inventoryRows,
 		inventorySaleValue: playerProgress.playerInventorySaleValue,
 		merchantRows,
+		refreshMinutes,
+		refreshSeconds,
+		stockItemCount,
 		feedback,
 		buyItem,
 		sellItemStack,

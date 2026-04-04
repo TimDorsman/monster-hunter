@@ -2,7 +2,7 @@
 import type { TableColumn } from "@nuxt/ui";
 import type { BattleInventoryRow } from "~~/types/battle-ui";
 import { getLootRarityClass } from "~~/utils/battle/presentation";
-import { formatLootAppearance, lootRarityLabels } from "~~/utils/loot";
+import { lootRarityLabels } from "~~/utils/loot";
 
 const props = defineProps<{
 	inventoryRows: BattleInventoryRow[];
@@ -58,15 +58,6 @@ const inventoryColumns: TableColumn<BattleInventoryRow>[] = [
 			class: {
 				th: "w-28 text-center",
 				td: "text-center",
-			},
-		},
-	},
-	{
-		accessorKey: "appearance",
-		header: "Appearance",
-		meta: {
-			class: {
-				th: "w-28",
 			},
 		},
 	},
@@ -144,12 +135,6 @@ const inventoryTableUi = {
 					{{ lootRarityLabels[row.original.rarity] }}
 				</span>
 			</template>
-
-			<template #appearance-cell="{ row }">
-				<span class="inventory-cell inventory-cell-appearance">
-					{{ formatLootAppearance(row.original.appearance) }}
-				</span>
-			</template>
 		</UTable>
 
 		<div v-else class="inventory-empty section-text-outline">
@@ -207,7 +192,6 @@ const inventoryTableUi = {
 }
 
 .inventory-cell-qty,
-.inventory-cell-appearance,
 .inventory-cell-value {
 	font-size: 0.88rem;
 	font-weight: 700;

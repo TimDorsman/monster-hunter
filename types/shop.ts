@@ -29,6 +29,18 @@ export type ShopCatalogRow = LootItemDefinition & {
 	ownedQuantity: number;
 };
 
+export type ShopRotationState = {
+	catalogOrderItemIds: string[];
+	stockItemIds: string[];
+	rotationIndex: number;
+	nextRefreshAt: number;
+};
+
+export type ShopStatePayload = {
+	stockItemIds: string[];
+	nextRefreshAt: number;
+};
+
 export type ShopFeedbackTone = "neutral" | "success" | "danger";
 
 export type ShopFeedback = {

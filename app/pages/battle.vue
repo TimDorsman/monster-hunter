@@ -13,6 +13,7 @@ import BattleLogPanel from "~~/components/feature/battle/BattleLogPanel.vue";
 import BattleRewardSequence from "~~/components/feature/battle/BattleRewardSequence.vue";
 import BattleRoomStatusPanel from "~~/components/feature/battle/BattleRoomStatusPanel.vue";
 import BattleTurnBanner from "~~/components/feature/battle/BattleTurnBanner.vue";
+import AnimatedNumber from "~~/components/ui/AnimatedNumber.vue";
 import { useBattleAudio } from "~/composables/battle/useBattleAudio";
 import { useBattlePageUi } from "~/composables/battle/useBattlePageUi";
 
@@ -264,7 +265,10 @@ onMounted(() => {
 		class="section-text-outline fixed left-6 top-6 z-30 flex items-center gap-2 rounded-xl border border-amber-300/40 bg-black/55 px-4 py-2 text-sm font-bold uppercase tracking-[0.08em] text-amber-100 backdrop-blur"
 	>
 		<Icon icon="mdi:cash-multiple" />
-		<span>Gold {{ playerGold }}</span>
+		<span>
+			Gold
+			<AnimatedNumber :value="playerGold" />
+		</span>
 	</div>
 
 	<BattleRewardSequence

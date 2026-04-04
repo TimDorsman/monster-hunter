@@ -48,13 +48,41 @@ async function parseTextMessage(message: unknown) {
 	return "";
 }
 
+function addPeerToPlayer(room: BattleRoom, playerId: string, peer: PeerLike) {
+	const existingPeers = room.peersByPlayerId.get(playerId);
+	if (existingPeers) {
+		existingPeers.add(peer);
+		return;
+	}
+
+	room.peersByPlayerId.set(playerId, new Set([peer]));
+}
+
+function removePeerFromPlayer(
+	room: BattleRoom,
+	playerId: string,
+	peer: PeerLike,
+) {
+	const existingPeers = room.peersByPlayerId.get(playerId);
+	if (!existingPeers) {
+		return;
+	}
+
+	existingPeers.delete(peer);
+	if (existingPeers.size > 0) {
+		return;
+	}
+
+	room.peersByPlayerId.delete(playerId);
+}
+
 export function handleBattlePeerOpen(room: BattleRoom, peer: PeerLike) {
 	const generatedPlayerId = `peer-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
 	const activeCount = getActiveHunters(room).length;
 	const role = activeCount < MAX_HUNTERS ? "hunter" : "spectator";
 
 	room.playerIdByPeer.set(peer, generatedPlayerId);
-	room.peersByPlayerId.set(generatedPlayerId, peer);
+	addPeerToPlayer(room, generatedPlayerId, peer);
 	room.hunters.set(
 		generatedPlayerId,
 		createDefaultHunter(generatedPlayerId, role, room.settings.hunter.maxHealth),
@@ -74,10 +102,15 @@ export function handleBattlePeerClose(room: BattleRoom, peer: PeerLike) {
 	}
 
 	room.playerIdByPeer.delete(peer);
-	room.peersByPlayerId.delete(playerId);
+	removePeerFromPlayer(room, playerId, peer);
 	const hunter = room.hunters.get(playerId);
 
 	if (!hunter) {
+		return;
+	}
+
+	if ((room.peersByPlayerId.get(playerId)?.size ?? 0) > 0) {
+		broadcastState(room);
 		return;
 	}
 
@@ -122,7 +155,7 @@ function handleJoinMessage(
 
 	if (existingPeerPlayerId && existingPeerPlayerId !== playerId) {
 		const generatedHunter = room.hunters.get(existingPeerPlayerId);
-		room.peersByPlayerId.delete(existingPeerPlayerId);
+		removePeerFromPlayer(room, existingPeerPlayerId, peer);
 		room.hunters.delete(existingPeerPlayerId);
 		if (room.turnHunterId === existingPeerPlayerId) {
 			room.turnHunterId = playerId;
@@ -135,7 +168,7 @@ function handleJoinMessage(
 	}
 
 	room.playerIdByPeer.set(peer, playerId);
-	room.peersByPlayerId.set(playerId, peer);
+	addPeerToPlayer(room, playerId, peer);
 
 	const upserted = room.hunters.get(playerId);
 	const nextLevel = Math.max(1, Math.floor(parsedMessage.level));

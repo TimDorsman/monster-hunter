@@ -1,9 +1,10 @@
 import { createInitialBattleGameSettings } from "./settings";
+import { createInitialShopRotationState } from "./shop";
 import { type BattleRoom, type PeerLike } from "./types";
 
 function createBattleRoom(): BattleRoom {
 	return {
-		peersByPlayerId: new Map<string, PeerLike>(),
+		peersByPlayerId: new Map<string, Set<PeerLike>>(),
 		playerIdByPeer: new Map<PeerLike, string>(),
 		hunters: new Map(),
 		disconnectCleanupTimers: new Map(),
@@ -22,6 +23,8 @@ function createBattleRoom(): BattleRoom {
 		settings: createInitialBattleGameSettings(),
 		resolvedReward: null,
 		rewardSequence: 0,
+		shopRotationState: createInitialShopRotationState(),
+		shopRefreshTimer: null,
 	};
 }
 

@@ -1,5 +1,6 @@
 import type { BattleGameSettings } from "~~/types/game-settings";
 import type { BattleReward, LootTableEntry } from "~~/types/loot";
+import type { ShopStatePayload } from "~~/types/shop";
 
 export type Monster = {
 	id: number;
@@ -76,6 +77,7 @@ export type BattleStateMessage = {
 		hunters: BattleHunterState[];
 		settings: BattleGameSettings;
 		resolvedReward: BattleReward | null;
+		shop: ShopStatePayload;
 	};
 };
 

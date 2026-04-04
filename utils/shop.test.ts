@@ -3,7 +3,10 @@ import type { PlayerProgress } from "~~/types/loot";
 import {
 	buyLootItem,
 	calculateLootBuyPrice,
+	createShopRotationState,
 	getShopCatalog,
+	resolveShopRotationState,
+	SHOP_REFRESH_INTERVAL_MS,
 	sellInventoryItem,
 } from "~~/utils/shop";
 
@@ -20,7 +23,6 @@ function createPlayerProgress(): PlayerProgress {
 				baseSellValue: 12,
 				category: "material",
 				craftingTags: ["bone", "water", "scale"],
-				appearance: 0.42,
 				timesSold: 0,
 				lastObtainedAt: 100,
 			},
@@ -41,6 +43,39 @@ describe("shop utils", () => {
 		expect(shopCatalog.length).toBeGreaterThan(0);
 		expect(shopCatalog.every((item) => item.category === "material")).toBe(
 			true,
+		);
+	});
+
+	it("creates a six-item rotating stock window", () => {
+		const itemIds = getShopCatalog().map((item) => item.id);
+		const rotationState = createShopRotationState(itemIds, 5_000, () => 0);
+
+		expect(rotationState.stockItemIds).toHaveLength(6);
+		expect(rotationState.rotationIndex).toBe(6);
+		expect(rotationState.nextRefreshAt).toBe(5_000 + SHOP_REFRESH_INTERVAL_MS);
+	});
+
+	it("advances expired stock windows to a fresh future refresh", () => {
+		const itemIds = getShopCatalog().map((item) => item.id);
+		const initialRotationState = createShopRotationState(
+			itemIds,
+			1_000,
+			() => 0,
+		);
+
+		const resolvedRotationState = resolveShopRotationState(
+			initialRotationState,
+			itemIds,
+			initialRotationState.nextRefreshAt + SHOP_REFRESH_INTERVAL_MS + 10,
+			() => 0,
+		);
+
+		expect(resolvedRotationState.nextRefreshAt).toBeGreaterThan(
+			initialRotationState.nextRefreshAt + SHOP_REFRESH_INTERVAL_MS,
+		);
+		expect(resolvedRotationState.stockItemIds).toHaveLength(6);
+		expect(resolvedRotationState.stockItemIds).not.toEqual(
+			initialRotationState.stockItemIds,
 		);
 	});
 
